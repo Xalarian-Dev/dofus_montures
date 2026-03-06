@@ -1,0 +1,3 @@
+﻿src/data/mounts/dragodindes.ts(1,30): error TS2307: Cannot find module '../types/mount' or its corresponding type declarations.
+src/data/mounts/muldos.ts(1,30): error TS2307: Cannot find module '../types/mount' or its corresponding type declarations.
+src/data/mounts/volkornes.ts(1,30): error TS2307: Cannot find module '../types/mount' or its corresponding type declarations.

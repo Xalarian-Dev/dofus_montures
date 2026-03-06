@@ -1,0 +1,17 @@
+﻿
+> dofus_montures@0.1.0 lint
+> eslint
+
+
+C:\Users\omega\Documents\Xalarian-Dev\dofus_montures\src\app\page.tsx
+   1:8   warning  'Image' is defined but never used                                @typescript-eslint/no-unused-vars
+  11:26  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\omega\Documents\Xalarian-Dev\dofus_montures\src\components\CaptureGuide.tsx
+  16:72  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\omega\Documents\Xalarian-Dev\dofus_montures\src\components\GenerationTree.tsx
+  86:34  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+Ô£û 4 problems (3 errors, 1 warning)
+
