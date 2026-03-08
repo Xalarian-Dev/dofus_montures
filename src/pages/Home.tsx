@@ -62,6 +62,7 @@ export default function Home() {
                 w={120}
                 h={120}
                 fit="contain"
+                loading="lazy"
                 style={{ imageRendering: 'pixelated' }}
               />
             </Group>

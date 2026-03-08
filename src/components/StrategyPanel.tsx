@@ -24,6 +24,7 @@ function MountChip({ mount }: { mount: MountSpecies }) {
           w={32}
           h={32}
           fit="contain"
+          loading="lazy"
           style={{ imageRendering: 'pixelated' }}
         />
       )}
@@ -213,7 +214,7 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                           <ArrowRight size={16} color="var(--mantine-color-gray-5)" style={{ flexShrink: 0 }} />
                           <Group gap={6} wrap="nowrap">
                             {mount.sprite && (
-                              <Image src={mount.sprite} alt={mount.name} w={32} h={32} fit="contain" style={{ imageRendering: 'pixelated' }} />
+                              <Image src={mount.sprite} alt={mount.name} w={32} h={32} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />
                             )}
                             <Stack gap={0}>
                               <Text size="xs" fw={700} c={done ? 'green.7' : 'orange.7'} lh={1.2}>{mount.name}</Text>
@@ -245,7 +246,7 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                             )}
                             <Group gap={6} wrap="nowrap">
                               {mount.sprite && (
-                                <Image src={mount.sprite} alt={mount.name} w={32} h={32} fit="contain" style={{ imageRendering: 'pixelated' }} />
+                                <Image src={mount.sprite} alt={mount.name} w={32} h={32} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />
                               )}
                               <Stack gap={0}>
                                 <Text size="xs" fw={700} c={done ? 'green.7' : 'orange.7'} lh={1.2}>{mount.name}</Text>

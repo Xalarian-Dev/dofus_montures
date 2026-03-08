@@ -1,10 +1,12 @@
-import { Stack, Group, Text, Badge, Paper, SimpleGrid, Image, Divider, NumberInput, List, Collapse, UnstyledButton, Checkbox, Tooltip, ActionIcon } from '@mantine/core';
+import { Stack, Group, Text, Badge, Paper, SimpleGrid, Image, Divider, NumberInput, List, Collapse, UnstyledButton, Checkbox, Tooltip, ActionIcon, Anchor } from '@mantine/core';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { useBreedingStore } from '@/store/useBreedingStore';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { useTrade } from '@/hooks/useTrade';
 
 interface InventoryPageProps {
@@ -20,7 +22,27 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
   const setDone = useBreedingStore((state) => state.setDone);
   const [helpOpen, setHelpOpen] = useState(true);
   const { user } = useAuth();
+  const { profile } = useProfile(user?.id);
   const { myListings, toggleListing } = useTrade(user?.id);
+
+  function checkProfileComplete() {
+    if (!profile.username || !profile.realm) {
+      notifications.show({
+        title: 'Profil incomplet',
+        message: (
+          <>
+            Définissez un nom public et un serveur dans{' '}
+            <Anchor component={Link as any} to="/profil" size="sm" c="orange.3">votre profil</Anchor>
+            {' '}pour proposer des montures à l'échange.
+          </>
+        ),
+        color: 'orange',
+        autoClose: 6000,
+      });
+      return false;
+    }
+    return true;
+  }
 
   const generations = mounts.reduce((acc, mount) => {
     if (!acc[mount.generation]) acc[mount.generation] = [];
@@ -141,6 +163,7 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                         color={myListings.get(mount.id)?.has('male') ? 'blue' : 'gray'}
                         onClick={() => {
                           const enabling = !myListings.get(mount.id)?.has('male');
+                          if (enabling && !checkProfileComplete()) return;
                           if (enabling && maleCount === 0) {
                             notifications.show({
                               title: 'Aucun mâle en inventaire',
@@ -161,6 +184,7 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                         color={myListings.get(mount.id)?.has('female') ? 'pink' : 'gray'}
                         onClick={() => {
                           const enabling = !myListings.get(mount.id)?.has('female');
+                          if (enabling && !checkProfileComplete()) return;
                           if (enabling && femaleCount === 0) {
                             notifications.show({
                               title: 'Aucune femelle en inventaire',
@@ -186,6 +210,7 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                         w={60}
                         h={60}
                         fit="contain"
+                        loading="lazy"
                         style={{ imageRendering: 'pixelated' }}
                       />
                     )}
@@ -230,14 +255,14 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                             <Group key={i} gap={4} justify="center" wrap="wrap">
                               <Group gap={4} wrap="nowrap">
                                 {mA?.sprite && (
-                                  <Image src={mA.sprite} alt={mA.name} w={24} h={24} fit="contain" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
+                                  <Image src={mA.sprite} alt={mA.name} w={24} h={24} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
                                 )}
                                 <Text size="xs" c="dark">{getMountName(parentA)}</Text>
                               </Group>
                               <Text size="xs" c="dimmed">+</Text>
                               <Group gap={4} wrap="nowrap">
                                 {mB?.sprite && (
-                                  <Image src={mB.sprite} alt={mB.name} w={24} h={24} fit="contain" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
+                                  <Image src={mB.sprite} alt={mB.name} w={24} h={24} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
                                 )}
                                 <Text size="xs" c="dark">{getMountName(parentB)}</Text>
                               </Group>

@@ -188,6 +188,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
                         w={72}
                         h={72}
                         fit="contain"
+                        loading="lazy"
                         style={{ imageRendering: 'pixelated' }}
                       />
                     )}

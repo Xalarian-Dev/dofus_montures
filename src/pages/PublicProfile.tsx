@@ -4,7 +4,7 @@ import {
   Container, Title, Text, Stack, Paper, Group, Avatar, Badge, Image,
   SimpleGrid, Loader, Center, Button, Divider,
 } from '@mantine/core';
-import { ArrowLeft, MessageCircle, Swords } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Swords, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages } from '@/hooks/useMessages';
@@ -36,7 +36,7 @@ interface Listing {
 export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { getOrCreateConversation } = useMessages(user?.id);
 
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
@@ -86,7 +86,25 @@ export default function PublicProfilePage() {
     if (convId) navigate('/echange');
   }
 
-  if (loading) return <Center py="xl"><Loader color="orange" /></Center>;
+  if (loading || authLoading) return <Center py="xl"><Loader color="orange" /></Center>;
+
+  if (!user) {
+    return (
+      <Container size="sm" py="xl">
+        <Center py="xl">
+          <Paper withBorder p="xl" radius="md" bg="gray.0" style={{ maxWidth: 400, width: '100%' }}>
+            <Stack align="center" gap="md">
+              <Lock size={32} color="var(--mantine-color-gray-5)" />
+              <Stack align="center" gap={4}>
+                <Text fw={700} size="sm" c="dark">Connexion requise</Text>
+                <Text size="sm" c="dimmed" ta="center">Connectez-vous pour voir les profils des joueurs.</Text>
+              </Stack>
+            </Stack>
+          </Paper>
+        </Center>
+      </Container>
+    );
+  }
 
   if (notFound) {
     return (
@@ -175,7 +193,7 @@ export default function PublicProfilePage() {
                       return (
                         <Group key={`${l.mountId}-${l.gender}`} gap="sm" wrap="nowrap">
                           {mount.sprite && (
-                            <Image src={mount.sprite} alt={mount.name} w={36} h={36} fit="contain" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
+                            <Image src={mount.sprite} alt={mount.name} w={36} h={36} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
                           )}
                           <Stack gap={0}>
                             <Text size="sm" fw={600}>{mount.name}</Text>

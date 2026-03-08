@@ -155,6 +155,7 @@ function MountCard({ mount }: { mount: MountSpecies }) {
             w={48}
             h={48}
             fit="contain"
+            loading="lazy"
             style={{ imageRendering: 'pixelated', flexShrink: 0 }}
           />
         )}

@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Container, Title, Text, Stack, Tabs, Paper, Group, Avatar, Badge, SimpleGrid,
   Image, Button, ActionIcon, TextInput, ScrollArea, Loader, Center, Select,
-  Indicator, Divider, Box, Anchor,
+  Indicator, Divider, Box, Anchor, Alert,
 } from '@mantine/core';
-import { Link, Navigate } from 'react-router-dom';
-import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { notifications } from '@mantine/notifications';
+import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus, Globe, UserX } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrade, UserTrade } from '@/hooks/useTrade';
 import { useMessages, Conversation } from '@/hooks/useMessages';
@@ -43,7 +44,16 @@ const categoryColor: Record<string, string> = {
 
 function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => void }) {
   const { profile, listings } = trade;
+  const { user } = useAuth();
   const displayName = profile.username ?? profile.fullName ?? 'Joueur';
+
+  function requireLogin() {
+    notifications.show({
+      title: 'Connexion requise',
+      message: 'Connectez-vous pour contacter un joueur.',
+      color: 'orange',
+    });
+  }
   const [expanded, setExpanded] = useState(false);
   const speciesCount = new Set(listings.map(l => l.mountId)).size;
 
@@ -60,7 +70,7 @@ function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => vo
           <Group gap="sm">
             <UserAvatar avatarUrl={profile.avatarUrl} name={displayName} />
             <Stack gap={0}>
-              {profile.username ? (
+              {profile.username && user ? (
                 <Anchor component={Link as any} to={`/${profile.username}`} fw={700} size="sm" c="dark" underline="hover">
                   {displayName}
                 </Anchor>
@@ -87,7 +97,7 @@ function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => vo
               variant="light"
               color="orange"
               leftSection={<MessageCircle size={12} />}
-              onClick={onContact}
+              onClick={user ? onContact : requireLogin}
             >
               Contacter
             </Button>
@@ -114,7 +124,7 @@ function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => vo
                 return (
                   <Group key={`${l.mountId}-${l.gender}`} gap={4} wrap="nowrap">
                     {mount.sprite && (
-                      <Image src={mount.sprite} alt={mount.name} w={28} h={28} fit="contain" style={{ imageRendering: 'pixelated' }} />
+                      <Image src={mount.sprite} alt={mount.name} w={28} h={28} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />
                     )}
                     <Stack gap={0}>
                       <Text size="xs">{mount.name}</Text>
@@ -441,13 +451,12 @@ function MessagesTab({
 
 export default function EchangePage() {
   const { user, loading } = useAuth();
-  const { profile } = useProfile(user?.id);
+  const { profile, loading: profileLoading } = useProfile(user?.id);
   const { getOrCreateConversation, unreadTotal } = useMessages(user?.id);
   const [activeTab, setActiveTab] = useState<string | null>('annonces');
   const [pendingConvId, setPendingConvId] = useState<string | null>(null);
 
   if (loading) return null;
-  if (!user) return <Navigate to="/" replace />;
 
   async function handleContact(otherUserId: string) {
     if (!user) return;
@@ -465,6 +474,20 @@ export default function EchangePage() {
           <Title order={1} c="dark">Échange</Title>
           <Text c="dimmed">Trouvez des joueurs pour échanger vos montures en élevage.</Text>
         </Stack>
+
+        {user && !profileLoading && !profile.realm && (
+          <Alert color="orange" variant="light" icon={<Globe size={16} />}>
+            Aucun serveur configuré — vous voyez les annonces de tous les serveurs.{' '}
+            <Anchor component={Link as any} to="/profil" size="sm">Configurer mon serveur</Anchor>
+          </Alert>
+        )}
+        {user && !profileLoading && !profile.username && (
+          <Alert color="blue" variant="light" icon={<UserX size={16} />}>
+            Définissez un nom public dans{' '}
+            <Anchor component={Link as any} to="/profil" size="sm">votre profil</Anchor>
+            {' '}pour utiliser la messagerie.
+          </Alert>
+        )}
 
         <Tabs value={activeTab} onChange={setActiveTab} color="orange">
           <Tabs.List mb="lg">

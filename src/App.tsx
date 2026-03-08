@@ -1,25 +1,26 @@
-import { useEffect } from 'react';
-import { AppShell } from '@mantine/core';
+import { lazy, Suspense, useEffect } from 'react';
+import { AppShell, Box } from '@mantine/core';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { BackToTop } from './components/BackToTop';
-import Home from './pages/Home';
-import Dragodindes from './pages/Dragodindes';
-import Muldos from './pages/Muldos';
-import Volkornes from './pages/Volkornes';
-import Caracteristiques from './pages/Caracteristiques';
-import Guide from './pages/Guide';
-import AuthCallback from './pages/AuthCallback';
-import Echange from './pages/Echange';
-import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite';
-import MentionsLegales from './pages/MentionsLegales';
-import Profile from './pages/Profile';
-import PublicProfile from './pages/PublicProfile';
 import { supabase } from './lib/supabase';
 import { HEADER_GRADIENT } from './lib/constants';
 import { useBreedingStore } from './store/useBreedingStore';
 import { CookieBanner } from './components/CookieBanner';
 import { Footer } from './components/Footer';
+
+const Home = lazy(() => import('./pages/Home'));
+const Dragodindes = lazy(() => import('./pages/Dragodindes'));
+const Muldos = lazy(() => import('./pages/Muldos'));
+const Volkornes = lazy(() => import('./pages/Volkornes'));
+const Caracteristiques = lazy(() => import('./pages/Caracteristiques'));
+const Guide = lazy(() => import('./pages/Guide'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const Echange = lazy(() => import('./pages/Echange'));
+const PolitiqueConfidentialite = lazy(() => import('./pages/PolitiqueConfidentialite'));
+const MentionsLegales = lazy(() => import('./pages/MentionsLegales'));
+const Profile = lazy(() => import('./pages/Profile'));
+const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 
 export default function App() {
   const loadFromSupabase = useBreedingStore((s) => s.loadFromSupabase);
@@ -46,33 +47,38 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AppShell header={{ height: 60 }} bg="orange.0">
+      <AppShell header={{ height: 60 }} bg="orange.1">
         <AppShell.Header
           style={{
             background: HEADER_GRADIENT,
             border: 'none',
+            boxShadow: '0 4px 24px rgba(180, 83, 9, 0.45), inset 0 1px 0 rgba(253, 186, 116, 0.2)',
           }}
         >
           <Navigation />
         </AppShell.Header>
 
-        <AppShell.Main>
+        <AppShell.Main style={{ display: 'flex', flexDirection: 'column' }}>
           <BackToTop />
           <CookieBanner />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/dragodindes" element={<Dragodindes />} />
-            <Route path="/muldos" element={<Muldos />} />
-            <Route path="/volkornes" element={<Volkornes />} />
-            <Route path="/caracteristiques" element={<Caracteristiques />} />
-            <Route path="/guide" element={<Guide />} />
-            <Route path="/echange" element={<Echange />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
-            <Route path="/mentions-legales" element={<MentionsLegales />} />
-            <Route path="/profil" element={<Profile />} />
-            <Route path="/:username" element={<PublicProfile />} />
-          </Routes>
+          <Box style={{ flex: 1 }}>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/dragodindes" element={<Dragodindes />} />
+                <Route path="/muldos" element={<Muldos />} />
+                <Route path="/volkornes" element={<Volkornes />} />
+                <Route path="/caracteristiques" element={<Caracteristiques />} />
+                <Route path="/guide" element={<Guide />} />
+                <Route path="/echange" element={<Echange />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
+                <Route path="/mentions-legales" element={<MentionsLegales />} />
+                <Route path="/profil" element={<Profile />} />
+                <Route path="/:username" element={<PublicProfile />} />
+              </Routes>
+            </Suspense>
+          </Box>
           <Footer />
         </AppShell.Main>
       </AppShell>

@@ -102,7 +102,7 @@ export function GuidePage() {
                 <Group gap="md" wrap="wrap">
                   {GEN1.dragodindes.map((m) => (
                     <Stack key={m.id} gap={2} align="center" style={{ width: 56 }}>
-                      {m.sprite && <Image src={m.sprite} w={40} h={40} fit="contain" style={{ imageRendering: 'pixelated' }} />}
+                      {m.sprite && <Image src={m.sprite} w={40} h={40} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />}
                       <Text size="xs" ta="center" c="dark" lh={1.2}>{m.name.replace('Dragodinde ', '')}</Text>
                     </Stack>
                   ))}
@@ -118,7 +118,7 @@ export function GuidePage() {
                 <Group gap="md" wrap="wrap">
                   {GEN1.muldos.map((m) => (
                     <Stack key={m.id} gap={2} align="center" style={{ width: 56 }}>
-                      {m.sprite && <Image src={m.sprite} w={40} h={40} fit="contain" style={{ imageRendering: 'pixelated' }} />}
+                      {m.sprite && <Image src={m.sprite} w={40} h={40} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />}
                       <Text size="xs" ta="center" c="dark" lh={1.2}>{m.name.replace('Muldo ', '')}</Text>
                     </Stack>
                   ))}
@@ -134,7 +134,7 @@ export function GuidePage() {
                 <Group gap="md" wrap="wrap">
                   {GEN1.volkornes.map((m) => (
                     <Stack key={m.id} gap={2} align="center" style={{ width: 56 }}>
-                      {m.sprite && <Image src={m.sprite} w={40} h={40} fit="contain" style={{ imageRendering: 'pixelated' }} />}
+                      {m.sprite && <Image src={m.sprite} w={40} h={40} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />}
                       <Text size="xs" ta="center" c="dark" lh={1.2}>{m.name.replace('Volkorne ', '')}</Text>
                     </Stack>
                   ))}
