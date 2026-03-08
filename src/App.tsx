@@ -11,8 +11,11 @@ import Caracteristiques from './pages/Caracteristiques';
 import Guide from './pages/Guide';
 import AuthCallback from './pages/AuthCallback';
 import Echange from './pages/Echange';
+import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite';
 import { supabase } from './lib/supabase';
 import { useBreedingStore } from './store/useBreedingStore';
+import { CookieBanner } from './components/CookieBanner';
+import { Footer } from './components/Footer';
 
 export default function App() {
   const loadFromSupabase = useBreedingStore((s) => s.loadFromSupabase);
@@ -51,6 +54,7 @@ export default function App() {
 
         <AppShell.Main>
           <BackToTop />
+          <CookieBanner />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/dragodindes" element={<Dragodindes />} />
@@ -60,7 +64,9 @@ export default function App() {
             <Route path="/guide" element={<Guide />} />
             <Route path="/echange" element={<Echange />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
           </Routes>
+          <Footer />
         </AppShell.Main>
       </AppShell>
     </BrowserRouter>

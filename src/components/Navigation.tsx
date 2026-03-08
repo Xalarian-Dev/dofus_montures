@@ -30,7 +30,7 @@ export function Navigation() {
         {/* Left: logo */}
         <Anchor component={Link as any} to="/" td="none">
           <Title order={4} c="white" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.2)' }}>
-            Élevage Dofus
+            Dofus Montures
           </Title>
           <Text size="xs" c="orange.1" visibleFrom="sm">Tracker de progression</Text>
         </Anchor>
