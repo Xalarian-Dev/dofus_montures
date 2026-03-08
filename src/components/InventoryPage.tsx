@@ -61,7 +61,7 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
               <Text size="sm"><Text component="span" fw={600}>Générations supérieures</Text> — Ces montures se reproduisent en croisant les deux parents indiqués sur chaque carte. Assurez-vous d'avoir un mâle et une femelle.</Text>
             </List.Item>
             <List.Item>
-              <Text size="sm">Une fois votre inventaire rempli, consultez l'onglet <Text component="span" fw={600}>Élevage</Text> pour voir les croisements possibles et optimiser votre progression.</Text>
+              <Text size="sm">Une fois vos montures renseignées dans l'inventaire (bouton <Text component="span" fw={600}>"Fait"</Text> pour les montures déjà obtenues), consultez l'onglet <Text component="span" fw={600}>Objectifs</Text> pour définir vos objectifs et optimiser votre progression.</Text>
             </List.Item>
             <List.Item>
               <Text size="sm">Proposez vos montures à l'échange via les boutons <Text component="span" fw={700} c="blue.5">♂</Text> et <Text component="span" fw={700} c="pink.5">♀</Text> en bas à droite de chaque carte. Elles apparaîtront dans la page <Text component="span" fw={600}>Échange</Text> pour que d'autres joueurs puissent vous contacter.</Text>
