@@ -36,7 +36,7 @@ export function buildStrategy(
     if (allNeeded.has(id)) continue;
     allNeeded.add(id);
     const mount = mountMap.get(id);
-    if (mount?.generation > 1 && mount.parents?.length) {
+    if (mount && mount.generation > 1 && mount.parents?.length) {
       const [a, b] = mount.parents[0];
       stack.push(a, b);
     }
@@ -82,7 +82,7 @@ export function buildStrategy(
     productionCounts.set(id, prod);
 
     const mount = mountMap.get(id);
-    if (mount?.generation > 1 && mount.parents?.length) {
+    if (mount && mount.generation > 1 && mount.parents?.length) {
       const [a, b] = mount.parents[0];
       parentDemand.set(a, (parentDemand.get(a) ?? 0) + breedProd);
       parentDemand.set(b, (parentDemand.get(b) ?? 0) + breedProd);
