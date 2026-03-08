@@ -34,6 +34,15 @@ export function Footer() {
             <Text fw={700} size="sm" c="orange.3" tt="uppercase" lts={1}>Légal</Text>
             <Anchor
               component={Link as any}
+              to="/mentions-legales"
+              size="sm"
+              c="orange.1"
+              style={{ textDecoration: 'none' }}
+            >
+              Mentions légales
+            </Anchor>
+            <Anchor
+              component={Link as any}
               to="/politique-de-confidentialite"
               size="sm"
               c="orange.1"

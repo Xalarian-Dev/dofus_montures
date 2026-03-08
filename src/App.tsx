@@ -12,6 +12,7 @@ import Guide from './pages/Guide';
 import AuthCallback from './pages/AuthCallback';
 import Echange from './pages/Echange';
 import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite';
+import MentionsLegales from './pages/MentionsLegales';
 import { supabase } from './lib/supabase';
 import { useBreedingStore } from './store/useBreedingStore';
 import { CookieBanner } from './components/CookieBanner';
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/echange" element={<Echange />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
+            <Route path="/mentions-legales" element={<MentionsLegales />} />
           </Routes>
           <Footer />
         </AppShell.Main>

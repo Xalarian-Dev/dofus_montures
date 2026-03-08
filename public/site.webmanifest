@@ -1,0 +1,12 @@
+{
+  "name": "Dofus Montures",
+  "short_name": "DofusMontures",
+  "description": "Tracker d'élevage de montures pour Dofus — Dragodindes, Muldos, Volkornes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#7c2d12",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "any", "type": "image/png" }
+  ]
+}
