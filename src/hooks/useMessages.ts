@@ -180,6 +180,9 @@ export function useMessages(currentUserId?: string) {
         });
         fetchConversations();
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, () => {
+        fetchConversations();
+      })
       .subscribe();
 
     return () => {
