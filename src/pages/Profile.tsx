@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container, Title, Text, Stack, Paper, Group, Avatar, TextInput, Button,
   Switch, Divider, Badge, Modal, Box, Alert,
@@ -28,12 +28,12 @@ export default function ProfilePage() {
   const [deleting, setDeleting] = useState(false);
 
   // Sync inputs with loaded profile
-  const [synced, setSynced] = useState(false);
-  if (!loading && !synced && profile.username) {
-    setUsername(profile.username);
-    setIngameName(profile.ingameName);
-    setSynced(true);
-  }
+  useEffect(() => {
+    if (!loading) {
+      setUsername(profile.username);
+      setIngameName(profile.ingameName);
+    }
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) {
     return (

@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Container, Title, Text, Stack, Tabs, Paper, Group, Avatar, Badge, SimpleGrid,
   Image, Button, ActionIcon, TextInput, ScrollArea, Loader, Center, Select,
-  Indicator, Divider, Box,
+  Indicator, Divider, Box, Anchor,
 } from '@mantine/core';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrade, UserTrade } from '@/hooks/useTrade';
@@ -58,7 +59,13 @@ function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => vo
           <Group gap="sm">
             <UserAvatar avatarUrl={profile.avatarUrl} name={displayName} />
             <Stack gap={0}>
-              <Text fw={700} size="sm">{displayName}</Text>
+              {profile.username ? (
+                <Anchor component={Link as any} to={`/${profile.username}`} fw={700} size="sm" c="dark" underline="hover">
+                  {displayName}
+                </Anchor>
+              ) : (
+                <Text fw={700} size="sm">{displayName}</Text>
+              )}
               <Text size="xs" c="dimmed">
                 {speciesCount} espèce{speciesCount > 1 ? 's' : ''} proposée{speciesCount > 1 ? 's' : ''}
               </Text>

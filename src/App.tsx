@@ -14,6 +14,7 @@ import Echange from './pages/Echange';
 import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite';
 import MentionsLegales from './pages/MentionsLegales';
 import Profile from './pages/Profile';
+import PublicProfile from './pages/PublicProfile';
 import { supabase } from './lib/supabase';
 import { useBreedingStore } from './store/useBreedingStore';
 import { CookieBanner } from './components/CookieBanner';
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
             <Route path="/mentions-legales" element={<MentionsLegales />} />
             <Route path="/profil" element={<Profile />} />
+            <Route path="/:username" element={<PublicProfile />} />
           </Routes>
           <Footer />
         </AppShell.Main>
