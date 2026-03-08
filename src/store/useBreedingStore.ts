@@ -14,6 +14,7 @@ interface BreedingState {
   setAllowCloning: (category: MountCategory, allowCloning: boolean) => Promise<void>;
   removeObjective: (category: MountCategory) => Promise<void>;
   loadFromSupabase: (userId: string) => Promise<void>;
+  resetAll: (userId: string) => Promise<void>;
 }
 
 async function upsertToSupabase(userId: string, mountId: string, maleCount: number, femaleCount: number, done: boolean) {
@@ -144,5 +145,13 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
       }
       set({ objectives });
     }
+  },
+
+  resetAll: async (userId) => {
+    await Promise.all([
+      supabase.from('breeding_inventory').delete().eq('user_id', userId),
+      supabase.from('user_objectives').delete().eq('user_id', userId),
+    ]);
+    set({ inventory: {}, objectives: {} });
   },
 }));

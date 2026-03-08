@@ -61,7 +61,8 @@ export function useTrade(currentUserId?: string) {
       const { data: profiles } = await supabase
         .from('user_profiles')
         .select('user_id, full_name, avatar_url, username')
-        .in('user_id', userIds);
+        .in('user_id', userIds)
+        .eq('is_visible', true);
 
       const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
 

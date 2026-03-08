@@ -60,14 +60,16 @@ export function Navigation() {
         <Group justify="flex-end" gap="sm">
           {user ? (
             <>
-              <Avatar size="sm" radius="xl">
-                <img
-                  src={user.user_metadata?.avatar_url}
-                  alt={user.user_metadata?.full_name}
-                  referrerPolicy="no-referrer"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </Avatar>
+              <Anchor component={Link as any} to="/profil" style={{ lineHeight: 0 }}>
+                <Avatar size="sm" radius="xl" style={{ cursor: 'pointer' }}>
+                  <img
+                    src={user.user_metadata?.avatar_url}
+                    alt={user.user_metadata?.full_name}
+                    referrerPolicy="no-referrer"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </Avatar>
+              </Anchor>
               <Button
                 variant="white"
                 color="orange"
