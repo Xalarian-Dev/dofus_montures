@@ -7,6 +7,8 @@ export type ObjectiveTarget = { targetId: string; targetType: 'monture' | 'succe
 interface BreedingState {
   inventory: BreedingInventory;
   objectives: Partial<Record<MountCategory, ObjectiveTarget>>;
+  /** Persists allowCloning per category independently of whether an objective is active. */
+  allowCloningByCategory: Partial<Record<MountCategory, boolean>>;
   setMaleCount: (mountId: string, count: number) => void;
   setFemaleCount: (mountId: string, count: number) => void;
   setDone: (mountId: string, done: boolean) => void;
@@ -31,6 +33,7 @@ async function upsertToSupabase(userId: string, mountId: string, maleCount: numb
 export const useBreedingStore = create<BreedingState>()((set, get) => ({
   inventory: {},
   objectives: {},
+  allowCloningByCategory: {},
 
   setMaleCount: (mountId, count) => {
     const clamped = Math.max(0, count);
@@ -94,7 +97,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     set((state) => ({
       objectives: {
         ...state.objectives,
-        [category]: { targetId, targetType, allowCloning: state.objectives[category]?.allowCloning ?? false },
+        [category]: { targetId, targetType, allowCloning: state.allowCloningByCategory[category] ?? state.objectives[category]?.allowCloning ?? false },
       },
     }));
     const { data } = await supabase.auth.getUser();
@@ -109,8 +112,10 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
   setAllowCloning: async (category, allowCloning) => {
     set((state) => {
       const current = state.objectives[category];
-      if (!current) return state;
-      return { objectives: { ...state.objectives, [category]: { ...current, allowCloning } } };
+      return {
+        allowCloningByCategory: { ...state.allowCloningByCategory, [category]: allowCloning },
+        objectives: current ? { ...state.objectives, [category]: { ...current, allowCloning } } : state.objectives,
+      };
     });
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
@@ -140,10 +145,14 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
 
     if (objectivesRes.data) {
       const objectives: Partial<Record<MountCategory, ObjectiveTarget>> = {};
+      const allowCloningByCategory: Partial<Record<MountCategory, boolean>> = {};
       for (const row of objectivesRes.data) {
-        objectives[row.category as MountCategory] = { targetId: row.target_id, targetType: row.target_type, allowCloning: row.allow_cloning ?? false };
+        const cat = row.category as MountCategory;
+        const allowCloning = row.allow_cloning ?? false;
+        objectives[cat] = { targetId: row.target_id, targetType: row.target_type, allowCloning };
+        allowCloningByCategory[cat] = allowCloning;
       }
-      set({ objectives });
+      set({ objectives, allowCloningByCategory });
     }
   },
 

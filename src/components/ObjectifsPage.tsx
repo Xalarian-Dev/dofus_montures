@@ -4,7 +4,6 @@ import { Trash2 } from 'lucide-react';
 import { Search, Lock } from 'lucide-react';
 import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { useBreedingStore } from '@/store/useBreedingStore';
-import { buildStrategy, buildSuccesStrategy } from '@/lib/breedingStrategy';
 import { StrategyPanel } from '@/components/StrategyPanel';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -20,12 +19,12 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
   const [pendingMount, setPendingMount] = useState<MountSpecies | null>(null);
   const [pendingAchievementId, setPendingAchievementId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const { objectives, setObjective, setAllowCloning, removeObjective } = useBreedingStore();
+  const { objectives, allowCloningByCategory, setObjective, setAllowCloning, removeObjective } = useBreedingStore();
   const category = mounts[0]?.category;
   const currentObjective = category ? objectives[category] : undefined;
   const currentObjectiveId = currentObjective?.targetType === 'monture' ? currentObjective.targetId : undefined;
   const currentSuccesId = currentObjective?.targetType === 'succes' ? currentObjective.targetId : undefined;
-  const allowCloning = currentObjective?.allowCloning ?? false;
+  const allowCloning = (category ? allowCloningByCategory[category] : undefined) ?? currentObjective?.allowCloning ?? false;
 
   // Sync tab to match the saved objective type once loaded from DB
   useEffect(() => {
@@ -86,6 +85,9 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
           </List.Item>
           <List.Item>
             <Text size="sm"><Text component="span" fw={600}>Autoriser le clonage</Text> permet de dupliquer une monture sans accouplement, réduisant le nombre de croisements nécessaires. <Text component="span" fw={600} c="orange.7">Préférez les montures stériles comme cibles de clonage</Text> — détruire une monture fertile réduit votre capacité d'élevage.</Text>
+          </List.Item>
+          <List.Item>
+            <Text size="sm">Le mode <Text component="span" fw={600}>Optimisé</Text> distribue la production sur toutes les combinaisons de parents possibles, réduisant la charge sur chaque couple. Le mode <Text component="span" fw={600}>Simple</Text> recommande une seule combinaison par monture et indique le nombre d'alternatives disponibles.</Text>
           </List.Item>
           <List.Item>
             <Text size="sm"><Text component="span" fw={600} c="orange.7">Non pris en compte :</Text> la généalogie des montures (parenté) et les probabilités d'obtenir un bébé de génération supérieure. La stratégie suppose que chaque croisement aboutit.</Text>
@@ -241,7 +243,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
       )}
 
       {type === 'succes' && currentSuccesId && (
-        <StrategyPanel strategy={buildSuccesStrategy(currentSuccesId, mounts, allowCloning)} />
+        <StrategyPanel achievementId={currentSuccesId} allMounts={mounts} allowCloning={allowCloning} />
       )}
 
       {type === 'monture' && !currentObjectiveId && filteredMounts.length === 0 && search && (
@@ -251,7 +253,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
       )}
 
       {type === 'monture' && currentObjectiveId && (
-        <StrategyPanel strategy={buildStrategy([currentObjectiveId], mounts, allowCloning)} />
+        <StrategyPanel targetIds={[currentObjectiveId]} allMounts={mounts} allowCloning={allowCloning} />
       )}
 
       <Modal
