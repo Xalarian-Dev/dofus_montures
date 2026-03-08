@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.dofuspourlesnoobs.com)",
+      "Bash(npm install)"
+    ]
+  }
+}
