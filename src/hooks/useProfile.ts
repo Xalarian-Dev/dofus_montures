@@ -5,10 +5,11 @@ export interface Profile {
   username: string;
   ingameName: string;
   isVisible: boolean;
+  realm: string;
 }
 
 export function useProfile(userId?: string) {
-  const [profile, setProfile] = useState<Profile>({ username: '', ingameName: '', isVisible: true });
+  const [profile, setProfile] = useState<Profile>({ username: '', ingameName: '', isVisible: true, realm: '' });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -17,7 +18,7 @@ export function useProfile(userId?: string) {
     setLoading(true);
     const { data } = await supabase
       .from('user_profiles')
-      .select('username, ingame_name, is_visible')
+      .select('username, ingame_name, is_visible, realm')
       .eq('user_id', userId)
       .maybeSingle();
     if (data) {
@@ -25,6 +26,7 @@ export function useProfile(userId?: string) {
         username: data.username ?? '',
         ingameName: data.ingame_name ?? '',
         isVisible: data.is_visible ?? true,
+        realm: data.realm ?? '',
       });
     }
     setLoading(false);
@@ -68,6 +70,15 @@ export function useProfile(userId?: string) {
     setProfile((p) => ({ ...p, ingameName }));
   }
 
+  async function saveRealm(realm: string) {
+    if (!userId) return;
+    await supabase
+      .from('user_profiles')
+      .update({ realm, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+    setProfile((p) => ({ ...p, realm }));
+  }
+
   async function saveVisibility(isVisible: boolean) {
     if (!userId) return;
     await supabase
@@ -85,5 +96,5 @@ export function useProfile(userId?: string) {
     return true;
   }
 
-  return { profile, loading, saving, saveUsername, saveIngameName, saveVisibility, deleteAccount };
+  return { profile, loading, saving, saveUsername, saveIngameName, saveRealm, saveVisibility, deleteAccount };
 }

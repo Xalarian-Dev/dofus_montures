@@ -15,7 +15,6 @@ export default function MentionsLegales() {
           <Title order={3}>1. Éditeur du site</Title>
           <Stack gap="xs">
             <Text size="sm" c="dimmed"><strong>Nom :</strong> Xalarian (personne physique)</Text>
-            <Text size="sm" c="dimmed"><strong>Contact :</strong> xalarian [dot] dev [at] gmail [dot] com</Text>
             <Text size="sm" c="dimmed"><strong>GitHub :</strong> github.com/Xalarian-Dev</Text>
           </Stack>
         </Stack>

@@ -8,6 +8,7 @@ export interface UserProfile {
   fullName?: string;
   avatarUrl?: string;
   username?: string;
+  realm?: string;
 }
 
 export interface TradeListing {
@@ -26,7 +27,7 @@ export interface UserTrade {
 // myListings: Map<mountId, Set<gender>> — which genders I'm offering per mount
 export type MyListings = Map<string, Set<TradeGender>>;
 
-export function useTrade(currentUserId?: string) {
+export function useTrade(currentUserId?: string, currentRealm?: string) {
   const [myListings, setMyListings] = useState<MyListings>(new Map());
   const [allTrades, setAllTrades] = useState<UserTrade[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,11 +59,13 @@ export function useTrade(currentUserId?: string) {
       if (!listings?.length) { setAllTrades([]); return; }
 
       const userIds = [...new Set(listings.map((l) => l.user_id))];
-      const { data: profiles } = await supabase
+      let profilesQuery = supabase
         .from('user_profiles')
-        .select('user_id, full_name, avatar_url, username')
+        .select('user_id, full_name, avatar_url, username, realm')
         .in('user_id', userIds)
         .eq('is_visible', true);
+      if (currentRealm) profilesQuery = profilesQuery.eq('realm', currentRealm);
+      const { data: profiles } = await profilesQuery;
 
       const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
 
@@ -82,8 +85,9 @@ export function useTrade(currentUserId?: string) {
       for (const [userId, userListings] of byUser) {
         if (userId === currentUserId) continue;
         const p = profileMap.get(userId);
+        if (!p) continue; // filtered out (wrong realm or not visible)
         trades.push({
-          profile: { userId, fullName: p?.full_name, avatarUrl: p?.avatar_url, username: p?.username },
+          profile: { userId, fullName: p.full_name, avatarUrl: p.avatar_url, username: p.username, realm: p.realm },
           listings: userListings,
         });
       }
@@ -124,7 +128,7 @@ export function useTrade(currentUserId?: string) {
         return next;
       });
     }
-  }, [currentUserId]);
+  }, [currentUserId, currentRealm]);
 
   useEffect(() => {
     fetchMyListings();

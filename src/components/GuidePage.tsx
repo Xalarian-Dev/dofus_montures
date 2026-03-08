@@ -1,5 +1,5 @@
 import { Container, Stack, Title, Text, Paper, Divider, Badge, Group, ThemeIcon, Code, Image, Tooltip, CopyButton, Table, Anchor } from '@mantine/core';
-import { BookOpen, Egg, Heart, Info, MapPin, Sliders, TrendingUp, Copy } from 'lucide-react';
+import { BookOpen, Egg, Heart, Info, MapPin, Sliders, TrendingUp, Copy, Star } from 'lucide-react';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
@@ -33,6 +33,7 @@ const TOC_SECTIONS = [
   { id: 'capture', label: 'Capture' },
   { id: 'jauges', label: "Jauges d'Enclos" },
   { id: 'fertilite', label: 'Fertilité' },
+  { id: 'experience', label: 'Expérience' },
   { id: 'reproduction', label: 'Reproduction' },
   { id: 'probabilites', label: 'Probabilités de génération' },
   { id: 'clonage', label: 'Clonage' },
@@ -264,6 +265,39 @@ export function GuidePage() {
           </Stack>
         </RuleBlock>
 
+        {/* Expérience */}
+        <RuleBlock id="experience" title="Expérience" color="green" icon={<Star size={14} />}>
+          <Stack gap="md">
+            <Text size="sm" c="dark">L'expérience d'une monture est alimentée par la jauge <Text component="span" fw={600}>Mangeoire</Text> dans l'enclos. Plus une monture monte en niveau, plus elle devient précieuse — à la fois comme monture équipée et comme parent pour l'élevage.</Text>
+
+            <Stack gap={4}>
+              <Text size="sm" fw={600} c="dark">Effets du niveau</Text>
+              <Stack gap={6}>
+                {([
+                  {
+                    color: 'violet',
+                    label: 'Statistiques en combat',
+                    desc: 'Chaque niveau augmente les bonus de caractéristiques accordés lorsque la monture est équipée par le joueur (Vitalité, Sagesse, etc.).',
+                  },
+                  {
+                    color: 'teal',
+                    label: 'Probabilité de génération',
+                    desc: 'Chaque niveau supplémentaire sur le couple de parents augmente la chance d\'obtenir un bébé de génération supérieure de +0,15 % (voir section Probabilités).',
+                  },
+                ] as const).map((item) => (
+                  <Paper key={item.label} withBorder p="xs" radius="md">
+                    <Group gap="sm" align="flex-start">
+                      <Badge variant="light" color={item.color} size="sm" style={{ flexShrink: 0 }}>{item.label}</Badge>
+                      <Text size="sm" c="dark">{item.desc}</Text>
+                    </Group>
+                  </Paper>
+                ))}
+              </Stack>
+            </Stack>
+
+          </Stack>
+        </RuleBlock>
+
         {/* Reproduction */}
         <RuleBlock id="reproduction" title="Reproduction" color="green" icon={<Egg size={14} />}>
           <Stack gap="md">
@@ -393,6 +427,7 @@ export function GuidePage() {
                     { kept: 'Généalogie (arbre généalogique identique)', reset: 'Statistiques (Amour, Maturité, Endurance à 0)' },
                     { kept: 'Genre (Mâle ou Femelle)', reset: 'Sérénité (remise à une valeur aléatoire)' },
                     { kept: 'Type / Espèce', reset: 'Capacités spéciales (disparaissent au clonage)' },
+                    { kept: '—', reset: 'Expérience (remise à zéro — niveau 1)' },
                   ] as const).map((row, i) => (
                     <Table.Tr key={i}>
                       <Table.Td>{row.kept}</Table.Td>
@@ -402,6 +437,12 @@ export function GuidePage() {
                 </Table.Tbody>
               </Table>
             </Stack>
+
+            <Paper withBorder p="sm" radius="md" bg="red.0" style={{ borderColor: 'var(--mantine-color-red-4)' }}>
+              <Text size="sm" c="dark">
+                <Text component="span" fw={600} c="red">Attention :</Text> Le clone repart systématiquement au <Text component="span" fw={600}>niveau 1</Text>. Toute l'expérience accumulée par les deux montures sacrifiées est perdue. Anticipez cela dans votre planning d'élevage.
+              </Text>
+            </Paper>
           </Stack>
         </RuleBlock>
 

@@ -2,7 +2,6 @@ import { Container, Title, Text, Stack, Tabs, MantineColor } from '@mantine/core
 import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { InventoryPage } from '@/components/InventoryPage';
 import { ObjectifsPage } from '@/components/ObjectifsPage';
-import { CaptureGuide } from '@/components/CaptureGuide';
 
 interface MountPageLayoutProps {
   title: string;
@@ -26,7 +25,6 @@ export function MountPageLayout({ title, subtitle, mounts, color, achievements, 
           <Tabs.List mb="lg">
             <Tabs.Tab value="inventaire">Inventaire</Tabs.Tab>
             <Tabs.Tab value="objectifs">Objectifs</Tabs.Tab>
-            <Tabs.Tab value="captures">Captures</Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="inventaire">
@@ -35,10 +33,6 @@ export function MountPageLayout({ title, subtitle, mounts, color, achievements, 
 
           <Tabs.Panel value="objectifs">
             <ObjectifsPage mounts={mounts} achievements={achievements} metaAchievement={metaAchievement} />
-          </Tabs.Panel>
-
-          <Tabs.Panel value="captures">
-            <CaptureGuide mounts={mounts} />
           </Tabs.Panel>
         </Tabs>
       </Stack>

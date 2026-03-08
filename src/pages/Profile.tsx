@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import {
   Container, Title, Text, Stack, Paper, Group, Avatar, TextInput, Button,
-  Switch, Divider, Badge, Modal, Box, Alert,
+  Switch, Divider, Badge, Modal, Box, Alert, Select,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { User, Eye, Swords, RotateCcw, Trash2, AlertTriangle } from 'lucide-react';
+import { User, Eye, Swords, RotateCcw, Trash2, AlertTriangle, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useBreedingStore } from '@/store/useBreedingStore';
 import { useNavigate } from 'react-router-dom';
+import { DOFUS_REALMS } from '@/data/realms';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { profile, loading, saving, saveUsername, saveIngameName, saveVisibility, deleteAccount } = useProfile(user?.id);
+  const { profile, loading, saving, saveUsername, saveIngameName, saveRealm, saveVisibility, deleteAccount } = useProfile(user?.id);
   const resetAll = useBreedingStore((s) => s.resetAll);
 
   const [username, setUsername] = useState('');
@@ -145,6 +146,27 @@ export default function ProfilePage() {
               </Button>
             </Group>
             {ingameSuccess && <Text size="xs" c="teal">Pseudo mis à jour !</Text>}
+          </Stack>
+        </Paper>
+
+        {/* Realm */}
+        <Paper withBorder p="lg" radius="md">
+          <Stack gap="md">
+            <Group gap="xs">
+              <Globe size={18} />
+              <Text fw={600}>Serveur de jeu</Text>
+            </Group>
+            <Text size="xs" c="dimmed">
+              Seuls les joueurs du même serveur apparaîtront dans la page Échange.
+            </Text>
+            <Select
+              placeholder="Choisir un serveur..."
+              data={DOFUS_REALMS}
+              value={profile.realm || null}
+              onChange={(val) => saveRealm(val ?? '')}
+              searchable
+              clearable
+            />
           </Stack>
         </Paper>
 

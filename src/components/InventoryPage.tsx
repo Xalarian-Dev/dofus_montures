@@ -133,9 +133,10 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                     style={{ position: 'absolute', top: 8, right: 8 }}
                   />
                   {user && (
-                    <Group gap={2} wrap="nowrap" style={{ position: 'absolute', bottom: 8, right: 8 }}>
+                    <Group gap={4} wrap="nowrap" align="center" style={{ position: 'absolute', bottom: 8, right: 8 }}>
+                      <Text size="xs" c="dimmed" fw={500}>Échange :</Text>
                       <ActionIcon
-                        size="xs"
+                        size="md"
                         variant={myListings.get(mount.id)?.has('male') ? 'filled' : 'subtle'}
                         color={myListings.get(mount.id)?.has('male') ? 'blue' : 'gray'}
                         onClick={() => {
@@ -152,10 +153,10 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                         }}
                         title="Proposer mâle à l'échange"
                       >
-                        <Text size="xs" fw={700} lh={1}>♂</Text>
+                        <Text size="md" fw={700} lh={1}>♂</Text>
                       </ActionIcon>
                       <ActionIcon
-                        size="xs"
+                        size="md"
                         variant={myListings.get(mount.id)?.has('female') ? 'filled' : 'subtle'}
                         color={myListings.get(mount.id)?.has('female') ? 'pink' : 'gray'}
                         onClick={() => {
@@ -172,7 +173,7 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                         }}
                         title="Proposer femelle à l'échange"
                       >
-                        <Text size="xs" fw={700} lh={1}>♀</Text>
+                        <Text size="md" fw={700} lh={1}>♀</Text>
                       </ActionIcon>
                     </Group>
                   )}
@@ -195,7 +196,7 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                     {/* Counters */}
                     <Group gap="xs" justify="center">
                       <Group gap={4} align="center">
-                        <Text size="xs" fw={700} c="blue.5">♂</Text>
+                        <Text fw={700} c="blue.5" style={{ fontSize: 22, lineHeight: 1 }}>♂</Text>
                         <NumberInput
                           value={maleCount}
                           onChange={(val: string | number) => setMaleCount(mount.id, typeof val === 'number' ? val : 0)}
@@ -206,7 +207,7 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                         />
                       </Group>
                       <Group gap={4} align="center">
-                        <Text size="xs" fw={700} c="pink.5">♀</Text>
+                        <Text fw={700} c="pink.5" style={{ fontSize: 22, lineHeight: 1 }}>♀</Text>
                         <NumberInput
                           value={femaleCount}
                           onChange={(val: string | number) => setFemaleCount(mount.id, typeof val === 'number' ? val : 0)}

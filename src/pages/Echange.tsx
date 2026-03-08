@@ -9,6 +9,7 @@ import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus } from 'luc
 import { useAuth } from '@/hooks/useAuth';
 import { useTrade, UserTrade } from '@/hooks/useTrade';
 import { useMessages, Conversation } from '@/hooks/useMessages';
+import { useProfile } from '@/hooks/useProfile';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
@@ -135,9 +136,9 @@ function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => vo
   );
 }
 
-function AnnonceTab({ onContact }: { onContact: (userId: string) => void }) {
+function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) => void; currentRealm?: string }) {
   const { user } = useAuth();
-  const { allTrades, loading } = useTrade(user?.id);
+  const { allTrades, loading } = useTrade(user?.id, currentRealm);
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [mountFilter, setMountFilter] = useState<string | null>(null);
 
@@ -440,6 +441,7 @@ function MessagesTab({
 
 export default function EchangePage() {
   const { user } = useAuth();
+  const { profile } = useProfile(user?.id);
   const { getOrCreateConversation, unreadTotal } = useMessages(user?.id);
   const [activeTab, setActiveTab] = useState<string | null>('annonces');
   const [pendingConvId, setPendingConvId] = useState<string | null>(null);
@@ -478,7 +480,7 @@ export default function EchangePage() {
           </Tabs.List>
 
           <Tabs.Panel value="annonces">
-            <AnnonceTab onContact={handleContact} />
+            <AnnonceTab onContact={handleContact} currentRealm={profile.realm || undefined} />
           </Tabs.Panel>
 
           <Tabs.Panel value="messages">
