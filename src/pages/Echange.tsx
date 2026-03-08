@@ -440,12 +440,13 @@ function MessagesTab({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function EchangePage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { profile } = useProfile(user?.id);
   const { getOrCreateConversation, unreadTotal } = useMessages(user?.id);
   const [activeTab, setActiveTab] = useState<string | null>('annonces');
   const [pendingConvId, setPendingConvId] = useState<string | null>(null);
 
+  if (loading) return null;
   if (!user) return <Navigate to="/" replace />;
 
   async function handleContact(otherUserId: string) {
