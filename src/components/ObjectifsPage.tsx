@@ -85,7 +85,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
             <Text size="sm">Les montures marquées <Text component="span" fw={600}>« Fait »</Text> dans l'onglet <Text component="span" fw={600}>Inventaire</Text> sont considérées comme acquises : la stratégie les exclut et ne vous demande que ce qu'il manque encore.</Text>
           </List.Item>
           <List.Item>
-            <Text size="sm"><Text component="span" fw={600}>Autoriser le clonage</Text> permet de dupliquer une monture sans accouplement, réduisant le nombre de croisements nécessaires (3 copies nécessaires = seulement 2 à élever). <Text component="span" fw={600} c="orange.7">Préférez les montures stériles comme cibles de clonage</Text> — détruire une monture fertile réduit votre capacité d'élevage.</Text>
+            <Text size="sm"><Text component="span" fw={600}>Autoriser le clonage</Text> permet de dupliquer une monture sans accouplement, réduisant le nombre de croisements nécessaires. <Text component="span" fw={600} c="orange.7">Préférez les montures stériles comme cibles de clonage</Text> — détruire une monture fertile réduit votre capacité d'élevage.</Text>
           </List.Item>
           <List.Item>
             <Text size="sm"><Text component="span" fw={600} c="orange.7">Non pris en compte :</Text> la généalogie des montures (parenté) et les probabilités d'obtenir un bébé de génération supérieure. La stratégie suppose que chaque croisement aboutit.</Text>
