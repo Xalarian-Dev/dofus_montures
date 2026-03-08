@@ -20,6 +20,53 @@ export interface BreedingStrategy {
   totalBreeds: number;
 }
 
+// Count how many ancestors of `pair` are already in `allNeeded` (promotes reuse).
+function countSharedAncestors(
+  pair: [string, string],
+  allNeeded: Set<string>,
+  mountMap: Map<string, MountSpecies>,
+): number {
+  let count = 0;
+  const stack = [...pair];
+  const visited = new Set<string>();
+  while (stack.length) {
+    const id = stack.pop()!;
+    if (visited.has(id)) continue;
+    visited.add(id);
+    if (allNeeded.has(id)) {
+      count++;
+      continue; // already needed — don't recurse further down this branch
+    }
+    const mount = mountMap.get(id);
+    if (mount && mount.generation > 1 && mount.parents?.length) {
+      stack.push(...mount.parents[0]);
+    }
+  }
+  return count;
+}
+
+// Among all parent pair options for a mount, pick the one with most overlap
+// with already-needed mounts (greedy reuse heuristic).
+function chooseBestPair(
+  pairs: [string, string][],
+  allNeeded: Set<string>,
+  mountMap: Map<string, MountSpecies>,
+): [string, string] {
+  if (pairs.length === 1) return pairs[0];
+
+  let bestPair = pairs[0];
+  let bestScore = -Infinity;
+
+  for (const pair of pairs) {
+    const score = countSharedAncestors(pair, allNeeded, mountMap);
+    if (score > bestScore) {
+      bestScore = score;
+      bestPair = pair;
+    }
+  }
+  return bestPair;
+}
+
 export function buildStrategy(
   targetIds: string[],
   allMounts: MountSpecies[],
@@ -27,18 +74,39 @@ export function buildStrategy(
 ): BreedingStrategy {
   const mountMap = new Map(allMounts.map((m) => [m.id, m]));
 
-  // Collect all mounts reachable from targets (via parents[0])
-  const allNeeded = new Set<string>();
-  const stack = [...targetIds];
-  while (stack.length) {
-    const id = stack.pop()!;
-    if (allNeeded.has(id)) continue;
-    allNeeded.add(id);
+  // Phase 1: collect the universe of all potentially-needed mounts by
+  // exploring every parent pair option (not just parents[0]).
+  const universe = new Set<string>();
+  const uStack = [...targetIds];
+  while (uStack.length) {
+    const id = uStack.pop()!;
+    if (universe.has(id)) continue;
+    universe.add(id);
     const mount = mountMap.get(id);
     if (mount && mount.generation > 1 && mount.parents?.length) {
-      const [a, b] = mount.parents[0];
-      stack.push(a, b);
+      for (const pair of mount.parents) uStack.push(...pair);
     }
+  }
+
+  // Phase 2: greedy parent-pair selection, processing highest gen first.
+  // When we encounter a multi-pair mount we pick the pair that maximises
+  // overlap with mounts that are already known to be needed (reuse first).
+  const allNeeded = new Set<string>(targetIds);
+  const chosenPairs = new Map<string, [string, string]>();
+
+  const sortedUniverse = [...universe].sort(
+    (a, b) => (mountMap.get(b)?.generation ?? 0) - (mountMap.get(a)?.generation ?? 0),
+  );
+
+  for (const id of sortedUniverse) {
+    if (!allNeeded.has(id)) continue;
+    const mount = mountMap.get(id);
+    if (!mount || mount.generation <= 1 || !mount.parents?.length) continue;
+
+    const pair = chooseBestPair(mount.parents, allNeeded, mountMap);
+    chosenPairs.set(id, pair);
+    allNeeded.add(pair[0]);
+    allNeeded.add(pair[1]);
   }
 
   // Count direct targets
@@ -56,7 +124,7 @@ export function buildStrategy(
   const productionCounts = new Map<string, number>();
 
   const sortedNeeded = [...allNeeded].sort(
-    (a, b) => (mountMap.get(b)?.generation ?? 0) - (mountMap.get(a)?.generation ?? 0)
+    (a, b) => (mountMap.get(b)?.generation ?? 0) - (mountMap.get(a)?.generation ?? 0),
   );
 
   for (const id of sortedNeeded) {
@@ -74,7 +142,7 @@ export function buildStrategy(
 
     const mount = mountMap.get(id);
     if (mount && mount.generation > 1 && mount.parents?.length) {
-      const [a, b] = mount.parents[0];
+      const [a, b] = chosenPairs.get(id) ?? mount.parents[0];
       parentDemand.set(a, (parentDemand.get(a) ?? 0) + breedProd);
       parentDemand.set(b, (parentDemand.get(b) ?? 0) + breedProd);
     }
@@ -95,7 +163,7 @@ export function buildStrategy(
     }
     if (!mount.parents?.length) continue;
 
-    const [aId, bId] = mount.parents[0];
+    const [aId, bId] = chosenPairs.get(mountId) ?? mount.parents[0];
     const parentA = mountMap.get(aId);
     const parentB = mountMap.get(bId);
     if (!parentA || !parentB) continue;

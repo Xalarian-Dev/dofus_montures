@@ -103,7 +103,7 @@ export function StrategyPanel({ strategy }: StrategyPanelProps) {
             </Badge>
           </Group>
           <Stack gap="xs">
-            {captures.filter(({ mount }) => !hideDone || !inventory[mount.id]?.done).map(({ mount }) => {
+            {captures.filter(({ mount }) => !hideDone || !inventory[mount.id]?.done).map(({ mount, count }) => {
               const done = inventory[mount.id]?.done ?? false;
               return (
                 <Paper
@@ -115,7 +115,10 @@ export function StrategyPanel({ strategy }: StrategyPanelProps) {
                   style={{ borderColor: done ? 'var(--mantine-color-green-4)' : undefined }}
                 >
                   <Group justify="space-between" wrap="nowrap">
-                    <MountChip mount={mount} />
+                    <Group gap="sm" wrap="nowrap">
+                      {count > 1 && <Badge color="red" variant="filled" size="sm">{count}×</Badge>}
+                      <MountChip mount={mount} />
+                    </Group>
                     <Checkbox
                       size="xs"
                       color="green"
