@@ -4,7 +4,7 @@ import {
   Image, Button, ActionIcon, TextInput, ScrollArea, Loader, Center, Select,
   Indicator, Divider, Box, Anchor,
 } from '@mantine/core';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrade, UserTrade } from '@/hooks/useTrade';
@@ -445,6 +445,8 @@ export default function EchangePage() {
   const { getOrCreateConversation, unreadTotal } = useMessages(user?.id);
   const [activeTab, setActiveTab] = useState<string | null>('annonces');
   const [pendingConvId, setPendingConvId] = useState<string | null>(null);
+
+  if (!user) return <Navigate to="/" replace />;
 
   async function handleContact(otherUserId: string) {
     if (!user) return;

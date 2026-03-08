@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Stack, Paper, Text, SegmentedControl, SimpleGrid, Image, Badge, UnstyledButton, TextInput, Modal, Group, Button, Flex, Checkbox } from '@mantine/core';
+import { Stack, Paper, Text, SegmentedControl, SimpleGrid, Image, Badge, UnstyledButton, TextInput, Modal, Group, Button, Flex, Checkbox, Center, Collapse, Divider, List } from '@mantine/core';
 import { Trash2 } from 'lucide-react';
-import { Search } from 'lucide-react';
+import { Search, Lock } from 'lucide-react';
 import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { useBreedingStore } from '@/store/useBreedingStore';
 import { buildStrategy, buildSuccesStrategy } from '@/lib/breedingStrategy';
 import { StrategyPanel } from '@/components/StrategyPanel';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ObjectifsPageProps {
   mounts: MountSpecies[];
@@ -14,11 +15,12 @@ interface ObjectifsPageProps {
 }
 
 export function ObjectifsPage({ mounts, achievements, metaAchievement }: ObjectifsPageProps) {
+  const { user } = useAuth();
   const [type, setType] = useState<'monture' | 'succes'>('monture');
   const [pendingMount, setPendingMount] = useState<MountSpecies | null>(null);
   const [pendingAchievementId, setPendingAchievementId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const { objectives, inventory, setObjective, setAllowCloning, removeObjective } = useBreedingStore();
+  const { objectives, setObjective, setAllowCloning, removeObjective } = useBreedingStore();
   const category = mounts[0]?.category;
   const currentObjective = category ? objectives[category] : undefined;
   const currentObjectiveId = currentObjective?.targetType === 'monture' ? currentObjective.targetId : undefined;
@@ -60,8 +62,61 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
   const isLocked = (targetType: 'monture' | 'succes') =>
     currentObjective !== undefined && currentObjective.targetType === targetType;
 
+  const [helpOpen, setHelpOpen] = useState(true);
+
+  const helpBanner = (
+    <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
+      <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+        <Group justify="space-between">
+          <Group gap="xs">
+            <Text fw={700} size="md" c="blue.7">Que faire ?</Text>
+            <Badge color="blue" variant="light" size="sm">Guide</Badge>
+          </Group>
+          <Text size="sm" c="blue.5">{helpOpen ? '▲ Réduire' : '▼ Afficher'}</Text>
+        </Group>
+      </UnstyledButton>
+      <Collapse in={helpOpen}>
+        <Divider my="sm" color="blue.2" />
+        <List size="sm" spacing="xs" c="dark">
+          <List.Item>
+            <Text size="sm">Définissez un <Text component="span" fw={600}>objectif</Text> en sélectionnant une monture cible ou un succès à débloquer. La stratégie générée vous indique les croisements à effectuer dans l'ordre optimal pour atteindre cet objectif.</Text>
+          </List.Item>
+          <List.Item>
+            <Text size="sm">Les montures marquées <Text component="span" fw={600}>« Fait »</Text> dans l'onglet <Text component="span" fw={600}>Inventaire</Text> sont considérées comme acquises : la stratégie les exclut et ne vous demande que ce qu'il manque encore.</Text>
+          </List.Item>
+          <List.Item>
+            <Text size="sm"><Text component="span" fw={600}>Autoriser le clonage</Text> permet de dupliquer une monture sans accouplement, réduisant le nombre de croisements nécessaires (3 copies nécessaires = seulement 2 à élever). <Text component="span" fw={600} c="orange.7">Préférez les montures stériles comme cibles de clonage</Text> — détruire une monture fertile réduit votre capacité d'élevage.</Text>
+          </List.Item>
+          <List.Item>
+            <Text size="sm"><Text component="span" fw={600} c="orange.7">Non pris en compte :</Text> la généalogie des montures (parenté) et les probabilités d'obtenir un bébé de génération supérieure. La stratégie suppose que chaque croisement aboutit.</Text>
+          </List.Item>
+        </List>
+      </Collapse>
+    </Paper>
+  );
+
+  if (!user) {
+    return (
+      <Stack gap="xl">
+        {helpBanner}
+        <Center py="xl">
+          <Paper withBorder p="xl" radius="md" bg="gray.0" style={{ maxWidth: 400, width: '100%' }}>
+            <Stack align="center" gap="md">
+              <Lock size={32} color="var(--mantine-color-gray-5)" />
+              <Stack align="center" gap={4}>
+                <Text fw={700} size="sm" c="dark">Connexion requise</Text>
+                <Text size="sm" c="dimmed" ta="center">Connectez-vous pour accéder aux stratégies d'élevage et sauvegarder vos objectifs.</Text>
+              </Stack>
+            </Stack>
+          </Paper>
+        </Center>
+      </Stack>
+    );
+  }
+
   return (
     <Stack gap="xl">
+      {helpBanner}
       <Flex justify="space-between" align="center" wrap="wrap" gap="sm">
         <SegmentedControl
           value={type}
@@ -186,7 +241,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
       )}
 
       {type === 'succes' && currentSuccesId && (
-        <StrategyPanel strategy={buildSuccesStrategy(currentSuccesId, mounts, allowCloning, inventory)} inventory={inventory} />
+        <StrategyPanel strategy={buildSuccesStrategy(currentSuccesId, mounts, allowCloning)} />
       )}
 
       {type === 'monture' && !currentObjectiveId && filteredMounts.length === 0 && search && (
@@ -196,7 +251,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
       )}
 
       {type === 'monture' && currentObjectiveId && (
-        <StrategyPanel strategy={buildStrategy([currentObjectiveId], mounts, allowCloning, inventory)} inventory={inventory} />
+        <StrategyPanel strategy={buildStrategy([currentObjectiveId], mounts, allowCloning)} />
       )}
 
       <Modal

@@ -1,4 +1,4 @@
-import { BreedingInventory, MountSpecies } from '@/types/mount';
+import { MountSpecies } from '@/types/mount';
 
 export interface BreedingBreed {
   mount: MountSpecies;
@@ -24,7 +24,6 @@ export function buildStrategy(
   targetIds: string[],
   allMounts: MountSpecies[],
   allowCloning = false,
-  inventory?: BreedingInventory
 ): BreedingStrategy {
   const mountMap = new Map(allMounts.map((m) => [m.id, m]));
 
@@ -65,15 +64,7 @@ export function buildStrategy(
     const pd = parentDemand.get(id) ?? 0;
     const required = Math.max(tc, pd);
 
-    // Inventory: if done, treat as fully satisfied; otherwise subtract what's already owned.
-    const inv = inventory?.[id];
-    let prod: number;
-    if (inv?.done) {
-      prod = 0;
-    } else {
-      const available = (inv?.maleCount ?? 0) + (inv?.femaleCount ?? 0);
-      prod = Math.max(0, required - available);
-    }
+    const prod = Math.max(0, required);
 
     // With cloning: for every 3 copies needed, only 2 must be bred.
     // Savings propagate to parents.
@@ -132,12 +123,11 @@ export function buildSuccesStrategy(
   achievementId: string,
   allMounts: MountSpecies[],
   allowCloning = false,
-  inventory?: BreedingInventory
 ): BreedingStrategy {
   const breedableMounts = allMounts.filter((m) => m.generation > 0);
 
   if (achievementId === 'meta') {
-    return buildStrategy(breedableMounts.map((m) => m.id), allMounts, allowCloning, inventory);
+    return buildStrategy(breedableMounts.map((m) => m.id), allMounts, allowCloning);
   }
 
   const gen = parseInt(achievementId.replace('gen_', ''), 10);
@@ -147,22 +137,13 @@ export function buildSuccesStrategy(
     const gen1 = breedableMounts.filter((m) => m.generation === 1);
     return {
       targets: gen1,
-      captures: gen1.filter((m) => !inventory?.[m.id]?.done).map((m) => {
-        const inv = inventory?.[m.id];
-        const available = (inv?.maleCount ?? 0) + (inv?.femaleCount ?? 0);
-        const count = Math.max(0, 1 - available);
-        return { mount: m, count };
-      }).filter((c) => c.count > 0),
-      totalCaptures: gen1.filter((m) => !inventory?.[m.id]?.done).reduce((sum, m) => {
-        const inv = inventory?.[m.id];
-        const available = (inv?.maleCount ?? 0) + (inv?.femaleCount ?? 0);
-        return sum + Math.max(0, 1 - available);
-      }, 0),
+      captures: gen1.map((m) => ({ mount: m, count: 1 })),
+      totalCaptures: gen1.length,
       steps: [],
       totalBreeds: 0,
     };
   }
 
   const targetIds = breedableMounts.filter((m) => m.generation === gen).map((m) => m.id);
-  return buildStrategy(targetIds, allMounts, allowCloning, inventory);
+  return buildStrategy(targetIds, allMounts, allowCloning);
 }

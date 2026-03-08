@@ -1,4 +1,5 @@
-import { Container, Title, Text, Stack, Divider } from '@mantine/core';
+import { Container, Title, Text, Stack, Divider, Anchor } from '@mantine/core';
+import { Link } from 'react-router-dom';
 
 export default function MentionsLegales() {
   return (
@@ -53,7 +54,7 @@ export default function MentionsLegales() {
           <Title order={3}>5. Données personnelles</Title>
           <Text size="sm" c="dimmed">
             Pour toute information sur la collecte et le traitement des données personnelles,
-            consultez notre <a href="/politique-de-confidentialite" style={{ color: 'inherit' }}>Politique de confidentialité</a>.
+            consultez notre <Anchor component={Link as any} to="/politique-de-confidentialite" c="dimmed" fw={500}>Politique de confidentialité</Anchor>.
           </Text>
         </Stack>
       </Stack>

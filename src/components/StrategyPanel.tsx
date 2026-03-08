@@ -1,16 +1,17 @@
-import { Stack, Paper, Text, Group, Badge, SimpleGrid, Image, Divider, ThemeIcon } from '@mantine/core';
-import { Sword, ArrowRight, Egg, Heart, CheckCircle } from 'lucide-react';
+import { Stack, Paper, Text, Group, Badge, SimpleGrid, Image, Divider, ThemeIcon, Checkbox, Switch } from '@mantine/core';
+import { useState } from 'react';
+import { Sword, ArrowRight, Egg, Heart } from 'lucide-react';
 import { BreedingStrategy } from '@/lib/breedingStrategy';
-import { BreedingInventory, MountSpecies } from '@/types/mount';
+import { MountSpecies } from '@/types/mount';
+import { useBreedingStore } from '@/store/useBreedingStore';
 
 interface StrategyPanelProps {
   strategy: BreedingStrategy;
-  inventory?: BreedingInventory;
 }
 
-function MountChip({ mount, count, done }: { mount: MountSpecies; count?: number; done?: boolean }) {
+function MountChip({ mount }: { mount: MountSpecies }) {
   return (
-    <Group gap={6} wrap="nowrap" opacity={done ? 0.5 : 1}>
+    <Group gap={6} wrap="nowrap">
       {mount.sprite && (
         <Image
           src={mount.sprite}
@@ -22,23 +23,20 @@ function MountChip({ mount, count, done }: { mount: MountSpecies; count?: number
         />
       )}
       <Stack gap={0}>
-        <Group gap={4}>
-          <Text size="xs" fw={600} lh={1.2}>{mount.name}</Text>
-          {done
-            ? <CheckCircle size={14} color="#2f9e44" fill="#b2f2bb" />
-            : count !== undefined && count > 1 && (
-              <Badge color="red" variant="filled" size="xs">{count}</Badge>
-            )}
-        </Group>
+        <Text size="xs" fw={600} lh={1.2}>{mount.name}</Text>
         <Text size="xs" c="dimmed">Gén. {mount.generation}</Text>
       </Stack>
     </Group>
   );
 }
 
-export function StrategyPanel({ strategy, inventory }: StrategyPanelProps) {
+export function StrategyPanel({ strategy }: StrategyPanelProps) {
   const { targets, captures, totalCaptures, steps, totalBreeds } = strategy;
-  const remaining = targets.filter((m) => !inventory?.[m.id]?.done).length;
+  const inventory = useBreedingStore((s) => s.inventory);
+  const setDone = useBreedingStore((s) => s.setDone);
+  const [hideDone, setHideDone] = useState(false);
+
+  const remaining = targets.filter((m) => !inventory[m.id]?.done).length;
 
   return (
     <Stack gap="lg">
@@ -56,9 +54,15 @@ export function StrategyPanel({ strategy, inventory }: StrategyPanelProps) {
         </Group>
         {targets.length > 1 && (
           <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="xs" mb="xs">
-            {targets.map((m) => (
-              <MountChip key={m.id} mount={m} done={inventory?.[m.id]?.done} />
-            ))}
+            {targets.map((m) => {
+              const done = inventory[m.id]?.done ?? false;
+              return (
+                <Group key={m.id} gap={6} wrap="nowrap" opacity={done ? 0.5 : 1}>
+                  <MountChip mount={m} />
+                  {done && <Text size="xs" c="green.6">✓</Text>}
+                </Group>
+              );
+            })}
           </SimpleGrid>
         )}
         <Group gap="xs" mt="xs">
@@ -76,6 +80,16 @@ export function StrategyPanel({ strategy, inventory }: StrategyPanelProps) {
         </Group>
       </Paper>
 
+      {/* Hide done toggle */}
+      <Group justify="flex-end">
+        <Switch
+          size="xs"
+          label="Masquer les étapes terminées"
+          checked={hideDone}
+          onChange={(e) => setHideDone(e.currentTarget.checked)}
+        />
+      </Group>
+
       {/* Captures */}
       {captures.length > 0 && (
         <Stack gap="xs">
@@ -88,13 +102,32 @@ export function StrategyPanel({ strategy, inventory }: StrategyPanelProps) {
               {totalCaptures} individu{totalCaptures > 1 ? 's' : ''} ({captures.length} espèce{captures.length > 1 ? 's' : ''})
             </Badge>
           </Group>
-          <Paper withBorder p="md" radius="md" bg="white">
-            <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">
-              {captures.map(({ mount, count }) => (
-                <MountChip key={mount.id} mount={mount} count={count} />
-              ))}
-            </SimpleGrid>
-          </Paper>
+          <Stack gap="xs">
+            {captures.filter(({ mount }) => !hideDone || !inventory[mount.id]?.done).map(({ mount }) => {
+              const done = inventory[mount.id]?.done ?? false;
+              return (
+                <Paper
+                  key={mount.id}
+                  withBorder
+                  p="sm"
+                  radius="md"
+                  bg={done ? 'green.0' : 'white'}
+                  style={{ borderColor: done ? 'var(--mantine-color-green-4)' : undefined }}
+                >
+                  <Group justify="space-between" wrap="nowrap">
+                    <MountChip mount={mount} />
+                    <Checkbox
+                      size="xs"
+                      color="green"
+                      checked={done}
+                      onChange={(e) => setDone(mount.id, e.currentTarget.checked)}
+                      label={done ? 'Obtenu' : 'À capturer'}
+                    />
+                  </Group>
+                </Paper>
+              );
+            })}
+          </Stack>
         </Stack>
       )}
 
@@ -113,35 +146,55 @@ export function StrategyPanel({ strategy, inventory }: StrategyPanelProps) {
             </Badge>
           </Group>
           <Stack gap="xs">
-            {step.breeds.map(({ mount, parents, count }) => (
-              <Paper key={mount.id} withBorder p="md" radius="md" bg="white">
-                <Group gap="sm" wrap="wrap" align="center">
-                  {count > 1 && (
-                    <Badge color="red" variant="filled" size="sm">{count}×</Badge>
-                  )}
-                  <MountChip mount={parents[0]} />
-                  <Text c="dimmed" size="sm">+</Text>
-                  <MountChip mount={parents[1]} />
-                  <ArrowRight size={16} color="var(--mantine-color-gray-5)" style={{ flexShrink: 0 }} />
-                  <Group gap={6} wrap="nowrap">
-                    {mount.sprite && (
-                      <Image
-                        src={mount.sprite}
-                        alt={mount.name}
-                        w={32}
-                        h={32}
-                        fit="contain"
-                        style={{ imageRendering: 'pixelated' }}
-                      />
-                    )}
-                    <Stack gap={0}>
-                      <Text size="xs" fw={700} c="orange.7" lh={1.2}>{mount.name}</Text>
-                      <Text size="xs" c="dimmed">Gén. {mount.generation}</Text>
-                    </Stack>
+            {step.breeds.filter(({ mount }) => !hideDone || !inventory[mount.id]?.done).map(({ mount, parents, count }) => {
+              const done = inventory[mount.id]?.done ?? false;
+              return (
+                <Paper
+                  key={mount.id}
+                  withBorder
+                  p="md"
+                  radius="md"
+                  bg={done ? 'green.0' : 'white'}
+                  style={{ borderColor: done ? 'var(--mantine-color-green-4)' : undefined }}
+                >
+                  <Group justify="space-between" wrap="nowrap" align="center">
+                    <Group gap="sm" wrap="wrap" align="center">
+                      {count > 1 && (
+                        <Badge color="red" variant="filled" size="sm">{count}×</Badge>
+                      )}
+                      <MountChip mount={parents[0]} />
+                      <Text c="dimmed" size="sm">+</Text>
+                      <MountChip mount={parents[1]} />
+                      <ArrowRight size={16} color="var(--mantine-color-gray-5)" style={{ flexShrink: 0 }} />
+                      <Group gap={6} wrap="nowrap">
+                        {mount.sprite && (
+                          <Image
+                            src={mount.sprite}
+                            alt={mount.name}
+                            w={32}
+                            h={32}
+                            fit="contain"
+                            style={{ imageRendering: 'pixelated' }}
+                          />
+                        )}
+                        <Stack gap={0}>
+                          <Text size="xs" fw={700} c={done ? 'green.7' : 'orange.7'} lh={1.2}>{mount.name}</Text>
+                          <Text size="xs" c="dimmed">Gén. {mount.generation}</Text>
+                        </Stack>
+                      </Group>
+                    </Group>
+                    <Checkbox
+                      size="xs"
+                      color="green"
+                      checked={done}
+                      onChange={(e) => setDone(mount.id, e.currentTarget.checked)}
+                      label={done ? 'Obtenu' : 'À élever'}
+                      style={{ flexShrink: 0 }}
+                    />
                   </Group>
-                </Group>
-              </Paper>
-            ))}
+                </Paper>
+              );
+            })}
           </Stack>
           {i < steps.length - 1 && <Divider />}
         </Stack>

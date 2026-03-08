@@ -16,6 +16,7 @@ import MentionsLegales from './pages/MentionsLegales';
 import Profile from './pages/Profile';
 import PublicProfile from './pages/PublicProfile';
 import { supabase } from './lib/supabase';
+import { HEADER_GRADIENT } from './lib/constants';
 import { useBreedingStore } from './store/useBreedingStore';
 import { CookieBanner } from './components/CookieBanner';
 import { Footer } from './components/Footer';
@@ -48,7 +49,7 @@ export default function App() {
       <AppShell header={{ height: 60 }} bg="orange.0">
         <AppShell.Header
           style={{
-            background: 'linear-gradient(90deg, #7c2d12, #92400e)',
+            background: HEADER_GRADIENT,
             border: 'none',
           }}
         >

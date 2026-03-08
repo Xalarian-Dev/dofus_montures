@@ -1,6 +1,7 @@
 import { Box, Stack, Text, Anchor, Divider, SimpleGrid } from '@mantine/core';
 import { Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { HEADER_GRADIENT } from '@/lib/constants';
 
 const EMAIL = ['xalarian.dev', 'gmail.com'].join('@');
 
@@ -14,7 +15,7 @@ export function Footer() {
     <Box
       mt="xl"
       style={{
-        background: 'linear-gradient(90deg, #7c2d12, #92400e)',
+        background: HEADER_GRADIENT,
         color: 'white',
       }}
     >
