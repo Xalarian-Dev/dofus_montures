@@ -174,12 +174,10 @@ export function ResumeTab({ mounts, achievements, metaAchievement }: ResumeTabPr
                         {mount.parents.length > 1 && (
                           <UnstyledButton
                             onClick={() => toggleParents(mount.id)}
-                            style={{
-                              padding: '2px 8px',
-                              borderRadius: 4,
-                              background: 'var(--mantine-color-gray-1)',
-                              border: '1px solid var(--mantine-color-gray-3)',
-                            }}
+                            px={8}
+                            py={2}
+                            bg="gray.1"
+                            style={{ borderRadius: 4, border: '1px solid var(--mantine-color-gray-3)' }}
                           >
                             <Text size="xs" c="dimmed" fw={600}>
                               {expandedParents.has(mount.id)

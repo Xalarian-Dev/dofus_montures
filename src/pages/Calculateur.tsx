@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Container, Title, Text, Stack, Paper, Group, Slider, NumberInput,
-  Badge, Divider, ThemeIcon, SegmentedControl, SimpleGrid, Alert,
+  Badge, Divider, ThemeIcon, SegmentedControl, SimpleGrid, Alert, Collapse, UnstyledButton, List,
 } from '@mantine/core';
 import { Clock, CalendarClock, TriangleAlert, Calculator } from 'lucide-react';
 
@@ -227,11 +227,11 @@ function SimpleCalc() {
         ) : (
           <Stack gap="sm">
             {depleted && (
-              <Alert color="orange" variant="light" icon={<TriangleAlert size={14} />}>
+              <Alert color="red" variant="light" icon={<TriangleAlert size={14} />}>
                 La jauge se videra avant d'atteindre la cible.
               </Alert>
             )}
-            <SimpleGrid cols={2} spacing="sm">
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
               <Paper withBorder p="md" radius="md" bg="gray.0">
                 <Stack gap={2}>
                   <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Points manquants</Text>
@@ -544,7 +544,7 @@ function FullPlanner() {
               <PhaseCard key={i} phase={phase} step={i + 1} />
             ))}
 
-            <SimpleGrid cols={2} spacing="sm" mt="xs">
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mt="xs">
               <Paper withBorder p="md" radius="md" bg="gray.0">
                 <Stack gap={2}>
                   <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Durée totale</Text>
@@ -568,6 +568,8 @@ function FullPlanner() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Calculateur() {
+  const [helpOpen, setHelpOpen] = useState(true);
+
   return (
     <Container size="md" py="xl">
       <Stack gap="xl">
@@ -582,11 +584,35 @@ export default function Calculateur() {
         </Stack>
 
         <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
-          <Text size="sm" c="dark">
-            <Text component="span" fw={600}>Rappel :</Text> chaque unité drainée de la jauge transfère 1 point de statistique à la monture.
-            La vitesse de transfert dépend du niveau de remplissage de la jauge (Tiers 1 à 4).
-            La sérénité doit être gérée manuellement pour débloquer chaque statistique — ce calculateur suppose qu'elle est correctement configurée.
-          </Text>
+          <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+            <Group justify="space-between">
+              <Group gap="xs">
+                <Text fw={700} size="md" c="blue.7">Que faire ?</Text>
+                <Badge color="blue" variant="light" size="sm">Guide</Badge>
+              </Group>
+              <Text size="sm" c="blue.5">{helpOpen ? '▲ Réduire' : '▼ Afficher'}</Text>
+            </Group>
+          </UnstyledButton>
+          <Collapse in={helpOpen}>
+            <Divider my="sm" color="blue.2" />
+            <List size="sm" spacing="xs" c="dark">
+              <List.Item>
+                <Text size="sm">Chaque unité drainée de la jauge transfère <Text component="span" fw={600}>1 point de statistique</Text> à la monture. La vitesse dépend du niveau de remplissage (Tiers 1 à 4).</Text>
+              </List.Item>
+              <List.Item>
+                <Text size="sm">Utilisez le <Text component="span" fw={600}>Calculateur simple</Text> pour estimer le temps jusqu'à un objectif précis : montée d'une stat ou ajustement de la Sérénité.</Text>
+              </List.Item>
+              <List.Item>
+                <Text size="sm">Utilisez la <Text component="span" fw={600}>Planification complète</Text> pour générer automatiquement l'ordre optimal des phases (Endurance, Maturité, Amour) en exploitant les zones de recouvrement pour gagner deux stats simultanément.</Text>
+              </List.Item>
+              <List.Item>
+                <Text size="sm">Les <Text component="span" fw={600}>zones de recouvrement</Text> sont : Sérénité −2 000 à −1 (Endurance + Maturité simultanées) et 0 à +2 000 (Amour + Maturité simultanées).</Text>
+              </List.Item>
+              <List.Item>
+                <Text size="sm">Si la jauge se vide avant d'atteindre la cible, un avertissement <Text component="span" fw={600} c="orange.7">Rechargement requis</Text> s'affiche — rechargez la jauge et relancez le calcul.</Text>
+              </List.Item>
+            </List>
+          </Collapse>
         </Paper>
 
         <SimpleCalc />

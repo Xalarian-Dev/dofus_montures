@@ -164,7 +164,7 @@ export function EchangeInventaireTab() {
                     <Group gap="sm" wrap="nowrap">
                       {/* Male count */}
                       <Group gap={4} wrap="nowrap" align="center">
-                        <Text fw={900} c="blue.5" style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>♂</Text>
+                        <Text fw={900} c="blue.5" fz={22} lh={1} style={{ flexShrink: 0 }}>♂</Text>
                         <NumberInput
                           value={maleCount}
                           onChange={(val) => setMaleCount(mount.id, typeof val === 'number' ? val : 0)}
@@ -176,7 +176,7 @@ export function EchangeInventaireTab() {
                       </Group>
                       {/* Female count */}
                       <Group gap={4} wrap="nowrap" align="center">
-                        <Text fw={900} c="pink.5" style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>♀</Text>
+                        <Text fw={900} c="pink.5" fz={22} lh={1} style={{ flexShrink: 0 }}>♀</Text>
                         <NumberInput
                           value={femaleCount}
                           onChange={(val) => setFemaleCount(mount.id, typeof val === 'number' ? val : 0)}

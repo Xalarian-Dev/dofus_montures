@@ -18,8 +18,8 @@ export function BackToTop() {
           style={{
             ...styles,
             position: 'fixed',
-            bottom: 24,
-            right: 24,
+            bottom: 25,
+            right: 25,
             zIndex: 200,
           }}
           size="lg"
