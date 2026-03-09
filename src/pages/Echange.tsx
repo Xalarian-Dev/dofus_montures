@@ -2,15 +2,17 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Container, Title, Text, Stack, Tabs, Paper, Group, Avatar, Badge, SimpleGrid,
   Image, Button, ActionIcon, TextInput, ScrollArea, Loader, Center, Select,
-  Indicator, Divider, Box, Anchor, Alert,
+  Indicator, Divider, Box, Anchor, Alert, List, Collapse, UnstyledButton,
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
-import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus, Globe, UserX } from 'lucide-react';
+import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus, Globe, UserX, PackageOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrade, UserTrade } from '@/hooks/useTrade';
+import { useBreedingStore } from '@/store/useBreedingStore';
 import { useMessages, Conversation } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
+import { EchangeInventaireTab } from '@/components/EchangeInventaireTab';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
@@ -42,7 +44,7 @@ const categoryColor: Record<string, string> = {
   volkornes: 'violet',
 };
 
-function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => void }) {
+function TradeCard({ trade, onContact, wantedMounts }: { trade: UserTrade; onContact: () => void; wantedMounts: Record<string, { male: boolean; female: boolean }> }) {
   const { profile, listings } = trade;
   const { user } = useAuth();
   const displayName = profile.username ?? profile.fullName ?? 'Joueur';
@@ -121,13 +123,19 @@ function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => vo
               {catListings.map((l) => {
                 const mount = mountMap.get(l.mountId);
                 if (!mount) return null;
+                const isWanted = wantedMounts[l.mountId]?.[l.gender === 'male' ? 'male' : 'female'] ?? false;
                 return (
-                  <Group key={`${l.mountId}-${l.gender}`} gap={4} wrap="nowrap">
+                  <Group key={`${l.mountId}-${l.gender}`} gap={4} wrap="nowrap"
+                    style={isWanted ? { background: 'var(--mantine-color-yellow-0)', borderRadius: 6, padding: '2px 6px', outline: '1px solid var(--mantine-color-yellow-3)' } : undefined}
+                  >
                     {mount.sprite && (
                       <Image src={mount.sprite} alt={mount.name} w={28} h={28} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />
                     )}
                     <Stack gap={0}>
-                      <Text size="xs">{mount.name}</Text>
+                      <Group gap={4} wrap="nowrap">
+                        <Text size="xs">{mount.name}</Text>
+                        {isWanted && <Badge color="yellow" variant="filled" size="xs">Recherché</Badge>}
+                      </Group>
                       <Group gap={4}>
                         <Text size="xs" fw={700} c={l.gender === 'male' ? 'blue.5' : 'pink.5'}>
                           {l.gender === 'male' ? '♂' : '♀'}
@@ -149,8 +157,10 @@ function TradeCard({ trade, onContact }: { trade: UserTrade; onContact: () => vo
 function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) => void; currentRealm?: string }) {
   const { user } = useAuth();
   const { allTrades, loading } = useTrade(user?.id, currentRealm);
+  const wantedMounts = useBreedingStore((s) => s.wantedMounts);
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [mountFilter, setMountFilter] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(true);
 
   const afterCat = catFilter
     ? allTrades.filter((t) => t.listings.some((l) => l.category === catFilter))
@@ -164,9 +174,19 @@ function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) =
     .sort((a, b) => a[1].localeCompare(b[1]))
     .map(([value, label]) => ({ value, label }));
 
-  const filtered = mountFilter
+  const afterMount = mountFilter
     ? afterCat.filter((t) => t.listings.some((l) => l.mountId === mountFilter))
     : afterCat;
+
+  function tradeMatchesWanted(trade: UserTrade) {
+    return trade.listings.some((l) => wantedMounts[l.mountId]?.[l.gender === 'male' ? 'male' : 'female']);
+  }
+
+  const filtered = [...afterMount].sort((a, b) => {
+    const aMatch = tradeMatchesWanted(a) ? 0 : 1;
+    const bMatch = tradeMatchesWanted(b) ? 0 : 1;
+    return aMatch - bMatch;
+  });
 
   // Reset mount filter when category changes
   const handleCatChange = (val: string | null) => {
@@ -178,6 +198,35 @@ function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) =
 
   return (
     <Stack gap="lg">
+      <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
+        <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+          <Group justify="space-between">
+            <Group gap="xs">
+              <Text fw={700} size="md" c="blue.7">Que faire ?</Text>
+              <Badge color="blue" variant="light" size="sm">Guide</Badge>
+            </Group>
+            <Text size="sm" c="blue.5">{helpOpen ? '▲ Réduire' : '▼ Afficher'}</Text>
+          </Group>
+        </UnstyledButton>
+        <Collapse in={helpOpen}>
+          <Divider my="sm" color="blue.2" />
+          <List size="sm" spacing="xs" c="dark">
+            <List.Item>
+              <Text size="sm">Parcourez les offres des autres joueurs. Les annonces sont automatiquement <Text component="span" fw={600}>filtrées par votre serveur</Text> si celui-ci est configuré dans votre profil.</Text>
+            </List.Item>
+            <List.Item>
+              <Text size="sm">Utilisez les filtres <Text component="span" fw={600}>catégorie</Text> et <Text component="span" fw={600}>monture</Text> pour cibler précisément ce que vous recherchez.</Text>
+            </List.Item>
+            <List.Item>
+              <Text size="sm">Cliquez sur <Text component="span" fw={600}>Contacter</Text> pour envoyer un message au joueur via la messagerie intégrée. Un compte connecté est requis.</Text>
+            </List.Item>
+            <List.Item>
+              <Text size="sm">Pour publier vos propres offres, rendez-vous dans l'onglet <Text component="span" fw={600}>Inventaire</Text> et activez les boutons <Text component="span" fw={700} c="blue.5">♂</Text> / <Text component="span" fw={700} c="pink.5">♀</Text> sur les montures souhaitées.</Text>
+            </List.Item>
+          </List>
+        </Collapse>
+      </Paper>
+
       <Group gap="sm" wrap="wrap">
         <Select
           placeholder="Toutes catégories"
@@ -211,7 +260,7 @@ function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) =
           <Stack align="center" gap="xs">
             <ArrowLeftRight size={32} color="var(--mantine-color-gray-4)" />
             <Text c="dimmed" ta="center" size="sm">Aucune annonce pour l'instant.</Text>
-            <Text c="dimmed" ta="center" size="xs">Proposez vos montures à l'échange depuis l'onglet Inventaire.</Text>
+            <Text c="dimmed" ta="center" size="xs">Proposez vos montures à l'échange depuis l'onglet Inventaire de cette page.</Text>
           </Stack>
         </Paper>
       ) : (
@@ -221,6 +270,7 @@ function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) =
               key={trade.profile.userId}
               trade={trade}
               onContact={() => onContact(trade.profile.userId)}
+              wantedMounts={wantedMounts}
             />
           ))}
         </SimpleGrid>
@@ -394,7 +444,15 @@ function MessagesTab({
   if (!user) {
     return (
       <Center py="xl">
-        <Text c="dimmed">Connectez-vous pour accéder à vos messages.</Text>
+        <Paper withBorder p="xl" radius="md" ta="center" maw={400} w="100%">
+          <Stack gap="sm" align="center">
+            <MessageCircle size={32} color="var(--mantine-color-gray-5)" />
+            <Text fw={700} size="md">Connexion requise</Text>
+            <Text size="sm" c="dimmed">
+              Connectez-vous pour accéder à votre messagerie.
+            </Text>
+          </Stack>
+        </Paper>
       </Center>
     );
   }
@@ -453,7 +511,7 @@ export default function EchangePage() {
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useProfile(user?.id);
   const { getOrCreateConversation, unreadTotal } = useMessages(user?.id);
-  const [activeTab, setActiveTab] = useState<string | null>('annonces');
+  const [activeTab, setActiveTab] = useState<string | null>('inventaire');
   const [pendingConvId, setPendingConvId] = useState<string | null>(null);
 
   if (loading) return null;
@@ -491,8 +549,11 @@ export default function EchangePage() {
 
         <Tabs value={activeTab} onChange={setActiveTab} color="orange">
           <Tabs.List mb="lg">
-            <Tabs.Tab value="annonces" leftSection={<ArrowLeftRight size={14} />}>
-              Annonces
+            <Tabs.Tab value="inventaire" leftSection={<PackageOpen size={14} />}>
+              Inventaire
+            </Tabs.Tab>
+            <Tabs.Tab value="offres" leftSection={<ArrowLeftRight size={14} />}>
+              Offres
             </Tabs.Tab>
             <Tabs.Tab
               value="messages"
@@ -505,7 +566,11 @@ export default function EchangePage() {
             </Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panel value="annonces">
+          <Tabs.Panel value="inventaire">
+            <EchangeInventaireTab />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="offres">
             <AnnonceTab onContact={handleContact} currentRealm={profile.realm || undefined} />
           </Tabs.Panel>
 

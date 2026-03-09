@@ -19,7 +19,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
   const [pendingMount, setPendingMount] = useState<MountSpecies | null>(null);
   const [pendingAchievementId, setPendingAchievementId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const { objectives, allowCloningByCategory, setObjective, setAllowCloning, removeObjective } = useBreedingStore();
+  const { objectives, allowCloningByCategory, inventory, setObjective, setAllowCloning, removeObjective } = useBreedingStore();
   const category = mounts[0]?.category;
   const currentObjective = category ? objectives[category] : undefined;
   const currentObjectiveId = currentObjective?.targetType === 'monture' ? currentObjective.targetId : undefined;
@@ -35,6 +35,13 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
     ...Object.entries(achievements ?? {}).map(([gen, a]) => ({ id: `gen_${gen}`, achievement: a, isMeta: false })),
     ...(metaAchievement ? [{ id: 'meta', achievement: metaAchievement, isMeta: true }] : []),
   ];
+
+  function isAchievementUnlocked(id: string): boolean {
+    if (id === 'meta') return mounts.length > 0 && mounts.every((m) => inventory[m.id]?.done);
+    const gen = parseInt(id.replace('gen_', ''));
+    const genMounts = mounts.filter((m) => m.generation === gen);
+    return genMounts.length > 0 && genMounts.every((m) => inventory[m.id]?.done);
+  }
 
   const breedableMounts = mounts.filter((m) => m.generation > 0);
   const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -81,10 +88,13 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
             <Text size="sm">Définissez un <Text component="span" fw={600}>objectif</Text> en sélectionnant une monture cible ou un succès à débloquer. La stratégie générée vous indique les croisements à effectuer dans l'ordre optimal pour atteindre cet objectif.</Text>
           </List.Item>
           <List.Item>
-            <Text size="sm">Les montures marquées <Text component="span" fw={600}>« Fait »</Text> dans l'onglet <Text component="span" fw={600}>Inventaire</Text> sont considérées comme acquises : la stratégie les exclut et ne vous demande que ce qu'il manque encore.</Text>
+            <Text size="sm">Les montures marquées <Text component="span" fw={600}>« Fait »</Text> dans l'onglet <Text component="span" fw={600}>Résumé</Text> sont considérées comme acquises : la stratégie les exclut et ne vous demande que ce qu'il manque encore.</Text>
           </List.Item>
           <List.Item>
             <Text size="sm"><Text component="span" fw={600}>Autoriser le clonage</Text> permet de dupliquer une monture sans accouplement, réduisant le nombre de croisements nécessaires. <Text component="span" fw={600} c="orange.7">Préférez les montures stériles comme cibles de clonage</Text> — détruire une monture fertile réduit votre capacité d'élevage.</Text>
+          </List.Item>
+          <List.Item>
+            <Text size="sm">La stratégie établie ne considère <Text component="span" fw={600}>QUE le clonage via 2 montures de même couleur</Text> — libre à vous de tenter d'autres possibilités.</Text>
           </List.Item>
           <List.Item>
             <Text size="sm">Le mode <Text component="span" fw={600}>Optimisé</Text> distribue la production sur toutes les combinaisons de parents possibles, réduisant la charge sur chaque couple. Le mode <Text component="span" fw={600}>Simple</Text> recommande une seule combinaison par monture et indique le nombre d'alternatives disponibles.</Text>
@@ -167,19 +177,24 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
         <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing="sm">
           {displayedMounts.map((mount) => {
             const isObjective = mount.id === currentObjectiveId;
+            const isDone = inventory[mount.id]?.done ?? false;
             return (
               <UnstyledButton key={mount.id} onClick={() => !isLocked('monture') && setPendingMount(mount)}>
                 <Paper
                   withBorder
                   p="md"
                   radius="md"
-                  bg={isObjective ? 'orange.0' : 'white'}
+                  bg={isObjective ? 'orange.0' : isDone ? 'green.0' : 'white'}
                   style={{
-                    borderColor: isObjective ? 'var(--mantine-color-orange-5)' : undefined,
+                    borderColor: isObjective ? 'var(--mantine-color-orange-5)' : isDone ? 'var(--mantine-color-green-4)' : undefined,
                     transition: 'border-color 0.15s',
                     cursor: isLocked('monture') ? 'default' : 'pointer',
+                    position: 'relative',
                   }}
                 >
+                  {isDone && !isObjective && (
+                    <Text style={{ position: 'absolute', top: 6, right: 8 }} size="md" lh={1}>✓</Text>
+                  )}
                   <Stack gap={6} align="center">
                     {mount.sprite && (
                       <Image
@@ -189,12 +204,16 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
                         h={72}
                         fit="contain"
                         loading="lazy"
-                        style={{ imageRendering: 'pixelated' }}
+                        style={{ imageRendering: 'pixelated', opacity: isDone && !isObjective ? 0.7 : 1 }}
                       />
                     )}
                     <Text fw={600} size="xs" c="dark" ta="center" lh={1.3}>{mount.name}</Text>
-                    <Badge color={isObjective ? 'orange' : 'gray'} variant={isObjective ? 'filled' : 'light'} size="xs">
-                      {isObjective ? 'Objectif actuel' : `Gén. ${mount.generation}`}
+                    <Badge
+                      color={isObjective ? 'orange' : isDone ? 'green' : 'gray'}
+                      variant={isObjective || isDone ? 'filled' : 'light'}
+                      size="xs"
+                    >
+                      {isObjective ? 'Objectif actuel' : isDone ? 'Obtenu' : `Gén. ${mount.generation}`}
                     </Badge>
                   </Stack>
                 </Paper>
@@ -210,6 +229,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
             .filter((a) => !currentSuccesId || a.id === currentSuccesId)
             .map(({ id, achievement, isMeta }) => {
               const isSelected = id === currentSuccesId;
+              const unlocked = isAchievementUnlocked(id);
               return (
                 <UnstyledButton key={id} onClick={() => !isLocked('succes') && setPendingAchievementId(id)} style={{ height: '100%' }}>
                   <Paper
@@ -217,9 +237,9 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
                     p="md"
                     radius="md"
                     h="100%"
-                    bg={isSelected ? 'orange.0' : 'white'}
+                    bg={isSelected ? 'orange.0' : unlocked ? 'green.0' : 'white'}
                     style={{
-                      borderColor: isSelected ? 'var(--mantine-color-orange-5)' : undefined,
+                      borderColor: isSelected ? 'var(--mantine-color-orange-5)' : unlocked ? 'var(--mantine-color-green-4)' : undefined,
                       cursor: isLocked('succes') ? 'default' : 'pointer',
                     }}
                   >
@@ -228,6 +248,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
                         <Group gap={4} wrap="wrap">
                           {isMeta && <Badge color="yellow" variant="filled" size="xs">Méta</Badge>}
                           {isSelected && <Badge color="orange" variant="filled" size="xs">Objectif actuel</Badge>}
+                          {unlocked && !isSelected && <Badge color="green" variant="filled" size="xs">✓ Débloqué</Badge>}
                         </Group>
                         <Text fw={700} size="sm" lh={1.3}>{achievement.name}</Text>
                         <Text size="xs" c="dimmed" lh={1.3}>{achievement.description}</Text>

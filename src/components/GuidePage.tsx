@@ -325,9 +325,9 @@ export function GuidePage() {
               <Text size="sm" fw={600} c="dark">Avant de valider</Text>
               <Stack gap={6}>
                 {([
-                  { label: 'Probabilités', desc: 'Les chances d\'obtenir tel ou tel type de monture.' },
-                  { label: 'Gain', desc: 'L\'expérience de métier et les génétons que l\'action vous rapportera.' },
                   { label: 'Makina', desc: 'Insérez un consommable (Makina) entre les parents pour influencer les capacités ou les probabilités du bébé.' },
+                  { label: 'Probabilités', desc: 'Observez les chances d\'obtenir tel ou tel type de monture.' },
+                  { label: 'Gain', desc: 'Vous pouvez directement voir l\'expérience de métier et les génétons que l\'action vous rapportera.' },
                 ] as const).map((item) => (
                   <Paper key={item.label} withBorder p="xs" radius="md">
                     <Group gap="sm" align="flex-start">
@@ -400,7 +400,7 @@ export function GuidePage() {
 
             <Stack gap={6}>
               {([
-                { label: 'Condition', desc: 'Fusionner deux montures stériles de la même espèce et de la même génération.' },
+                { label: 'Condition', desc: 'Fusionner deux montures de la même espèce et de la même génération.' },
                 { label: 'Coût', desc: 'Les deux montures d\'origine sont définitivement supprimées.' },
                 { label: 'Gain', desc: 'Une copie conforme de l\'une des deux montures sacrifiées.' },
               ] as const).map((item) => (

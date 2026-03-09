@@ -9,9 +9,12 @@ interface BreedingState {
   objectives: Partial<Record<MountCategory, ObjectiveTarget>>;
   /** Persists allowCloning per category independently of whether an objective is active. */
   allowCloningByCategory: Partial<Record<MountCategory, boolean>>;
+  /** Local-only: mounts the user is looking for in trades. */
+  wantedMounts: Record<string, { male: boolean; female: boolean }>;
   setMaleCount: (mountId: string, count: number) => void;
   setFemaleCount: (mountId: string, count: number) => void;
   setDone: (mountId: string, done: boolean) => void;
+  setWanted: (mountId: string, gender: 'male' | 'female', wanted: boolean) => void;
   setObjective: (category: MountCategory, targetId: string, targetType: 'monture' | 'succes') => Promise<void>;
   setAllowCloning: (category: MountCategory, allowCloning: boolean) => Promise<void>;
   removeObjective: (category: MountCategory) => Promise<void>;
@@ -34,6 +37,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
   inventory: {},
   objectives: {},
   allowCloningByCategory: {},
+  wantedMounts: {},
 
   setMaleCount: (mountId, count) => {
     const clamped = Math.max(0, count);
@@ -64,6 +68,18 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         const entry = get().inventory[mountId];
         upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, clamped, entry?.done ?? false);
       }
+    });
+  },
+
+  setWanted: (mountId, gender, wanted) => {
+    set((state) => {
+      const current = state.wantedMounts[mountId] ?? { male: false, female: false };
+      return {
+        wantedMounts: {
+          ...state.wantedMounts,
+          [mountId]: { ...current, [gender]: wanted },
+        },
+      };
     });
   },
 

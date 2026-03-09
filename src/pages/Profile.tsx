@@ -131,7 +131,7 @@ export default function ProfilePage() {
               <Text fw={600}>Pseudo en jeu</Text>
             </Group>
             <Text size="xs" c="dimmed">
-              Affiché aux autres joueurs pour vous contacter via le /chuchotement en jeu.
+              Affiché aux autres joueurs pour vous contacter via le /w en jeu.
             </Text>
             <Group gap="sm" align="flex-start">
               <TextInput

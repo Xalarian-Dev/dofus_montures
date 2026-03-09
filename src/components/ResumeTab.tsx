@@ -1,47 +1,28 @@
-import { Stack, Group, Text, Badge, Paper, SimpleGrid, Image, Divider, NumberInput, List, Collapse, UnstyledButton, Checkbox, Tooltip, ActionIcon, Anchor } from '@mantine/core';
+import { Stack, Group, Text, Badge, Paper, SimpleGrid, Image, Divider, List, Collapse, UnstyledButton, Checkbox, Tooltip } from '@mantine/core';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { useBreedingStore } from '@/store/useBreedingStore';
-import { notifications } from '@mantine/notifications';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
-import { useTrade } from '@/hooks/useTrade';
 
-interface InventoryPageProps {
+interface ResumeTabProps {
   mounts: MountSpecies[];
   achievements?: Record<number, GenerationAchievement>;
   metaAchievement?: GenerationAchievement;
 }
 
-export function InventoryPage({ mounts, achievements, metaAchievement }: InventoryPageProps) {
+export function ResumeTab({ mounts, achievements, metaAchievement }: ResumeTabProps) {
   const inventory = useBreedingStore((state) => state.inventory);
-  const setMaleCount = useBreedingStore((state) => state.setMaleCount);
-  const setFemaleCount = useBreedingStore((state) => state.setFemaleCount);
   const setDone = useBreedingStore((state) => state.setDone);
   const [helpOpen, setHelpOpen] = useState(true);
-  const { user } = useAuth();
-  const { profile } = useProfile(user?.id);
-  const { myListings, toggleListing } = useTrade(user?.id);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
 
-  function checkProfileComplete() {
-    if (!profile.username || !profile.realm) {
-      notifications.show({
-        title: 'Profil incomplet',
-        message: (
-          <>
-            Définissez un nom public et un serveur dans{' '}
-            <Anchor component={Link as any} to="/profil" size="sm" c="orange.3">votre profil</Anchor>
-            {' '}pour proposer des montures à l'échange.
-          </>
-        ),
-        color: 'orange',
-        autoClose: 6000,
-      });
-      return false;
-    }
-    return true;
+  function toggleParents(mountId: string) {
+    setExpandedParents((prev) => {
+      const next = new Set(prev);
+      if (next.has(mountId)) next.delete(mountId);
+      else next.add(mountId);
+      return next;
+    });
   }
 
   const generations = mounts.reduce((acc, mount) => {
@@ -71,22 +52,22 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
           <Divider my="sm" color="blue.2" />
           <List size="sm" spacing="xs" c="dark">
             <List.Item>
-              <Text size="sm"><Text component="span" fw={600}>Renseignez vos montures</Text> <Text component="span" fw={700} c="orange.7">(FERTILES UNIQUEMENT)</Text> en saisissant les quantités mâles (<Text component="span" fw={700} c="blue.5">♂</Text>) et femelles (<Text component="span" fw={700} c="pink.5">♀</Text>) pour chaque espèce que vous possédez.</Text>
+              <Text size="sm">Cochez <Text component="span" fw={600}>"Fait"</Text> sur chaque monture déjà obtenue. Ces informations alimentent le suivi des succès.</Text>
             </List.Item>
             <List.Item>
-              <Text size="sm">Renseignez les montures déjà obtenues via le bouton <Text component="span" fw={600}>"Fait"</Text> présent sur les montures. Cela est pris en compte dans le suivi des succès.</Text>
+              <Text size="sm"><Text component="span" fw={600}>Génération 1</Text> — Montures de base, obtenues par <Text component="span" c="teal.6" fw={600}>capture</Text> dans le monde du jeu. Elles ne nécessitent pas de parents.</Text>
             </List.Item>
             <List.Item>
-              <Text size="sm"><Text component="span" fw={600}>Génération 1</Text> — Ces montures s'obtiennent par <Text component="span" c="teal.6" fw={600}>capture</Text> dans le monde du jeu. Elles peuvent également être obtenues par élevage.</Text>
+              <Text size="sm"><Text component="span" fw={600}>Générations supérieures</Text> — S'obtiennent uniquement par <Text component="span" fw={600}>croisement</Text> des deux parents indiqués sur la carte. Un mâle et une femelle sont nécessaires.</Text>
             </List.Item>
             <List.Item>
-              <Text size="sm"><Text component="span" fw={600}>Générations supérieures</Text> — Ces montures se reproduisent en croisant les deux parents indiqués sur chaque carte. Assurez-vous d'avoir un mâle et une femelle.</Text>
+              <Text size="sm">Les <Text component="span" fw={600}>succès</Text> se débloquent automatiquement lorsque toutes les montures d'une génération (ou de toute la catégorie) sont marquées « Fait ».</Text>
             </List.Item>
             <List.Item>
-              <Text size="sm">Une fois vos montures renseignées dans l'inventaire (bouton <Text component="span" fw={600}>"Fait"</Text> pour les montures déjà obtenues), consultez l'onglet <Text component="span" fw={600}>Objectifs</Text> pour définir vos objectifs et optimiser votre progression.</Text>
+              <Text size="sm">Pour renseigner vos quantités fertiles et proposer des montures à l'échange, rendez-vous dans <Text component="span" fw={600}>Échange → Inventaire</Text>.</Text>
             </List.Item>
             <List.Item>
-              <Text size="sm">Proposez vos montures à l'échange via les boutons <Text component="span" fw={700} c="blue.5">♂</Text> et <Text component="span" fw={700} c="pink.5">♀</Text> en bas à droite de chaque carte. Elles apparaîtront dans la page <Text component="span" fw={600}>Échange</Text> pour que d'autres joueurs puissent vous contacter.</Text>
+              <Text size="sm">Consultez l'onglet <Text component="span" fw={600}>Objectifs</Text> pour générer une stratégie d'élevage optimisée vers une monture ou un succès cible.</Text>
             </List.Item>
           </List>
         </Collapse>
@@ -134,8 +115,6 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
 
           <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing="sm">
             {generations[gen]?.map((mount) => {
-              const maleCount = inventory[mount.id]?.maleCount ?? 0;
-              const femaleCount = inventory[mount.id]?.femaleCount ?? 0;
               const done = inventory[mount.id]?.done ?? false;
               return (
                 <Paper
@@ -154,53 +133,6 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                     onChange={(e) => setDone(mount.id, e.currentTarget.checked)}
                     style={{ position: 'absolute', top: 8, right: 8 }}
                   />
-                  {user && (
-                    <Group gap={4} wrap="nowrap" align="center" style={{ position: 'absolute', bottom: 8, right: 8 }}>
-                      <Text size="xs" c="dimmed" fw={500}>Échange :</Text>
-                      <ActionIcon
-                        size="md"
-                        variant={myListings.get(mount.id)?.has('male') ? 'filled' : 'subtle'}
-                        color={myListings.get(mount.id)?.has('male') ? 'blue' : 'gray'}
-                        onClick={() => {
-                          const enabling = !myListings.get(mount.id)?.has('male');
-                          if (enabling && !checkProfileComplete()) return;
-                          if (enabling && maleCount === 0) {
-                            notifications.show({
-                              title: 'Aucun mâle en inventaire',
-                              message: `Vous n'avez aucun ${mount.name} mâle fertile renseigné.`,
-                              color: 'orange',
-                            });
-                            return;
-                          }
-                          toggleListing(mount.id, mount.category, 'male', enabling);
-                        }}
-                        title="Proposer mâle à l'échange"
-                      >
-                        <Text size="md" fw={700} lh={1}>♂</Text>
-                      </ActionIcon>
-                      <ActionIcon
-                        size="md"
-                        variant={myListings.get(mount.id)?.has('female') ? 'filled' : 'subtle'}
-                        color={myListings.get(mount.id)?.has('female') ? 'pink' : 'gray'}
-                        onClick={() => {
-                          const enabling = !myListings.get(mount.id)?.has('female');
-                          if (enabling && !checkProfileComplete()) return;
-                          if (enabling && femaleCount === 0) {
-                            notifications.show({
-                              title: 'Aucune femelle en inventaire',
-                              message: `Vous n'avez aucune ${mount.name} femelle fertile renseignée.`,
-                              color: 'orange',
-                            });
-                            return;
-                          }
-                          toggleListing(mount.id, mount.category, 'female', enabling);
-                        }}
-                        title="Proposer femelle à l'échange"
-                      >
-                        <Text size="md" fw={700} lh={1}>♀</Text>
-                      </ActionIcon>
-                    </Group>
-                  )}
                   <Stack gap="sm" align="center" py="xs">
                     {/* Sprite */}
                     {mount.sprite && (
@@ -218,57 +150,44 @@ export function InventoryPage({ mounts, achievements, metaAchievement }: Invento
                     {/* Name */}
                     <Text fw={600} size="sm" c="dark" ta="center">{mount.name}</Text>
 
-                    {/* Counters */}
-                    <Group gap="xs" justify="center">
-                      <Group gap={4} align="center">
-                        <Text fw={700} c="blue.5" style={{ fontSize: 22, lineHeight: 1 }}>♂</Text>
-                        <NumberInput
-                          value={maleCount}
-                          onChange={(val: string | number) => setMaleCount(mount.id, typeof val === 'number' ? val : 0)}
-                          min={0}
-                          size="xs"
-                          w={64}
-                          allowNegative={false}
-                        />
-                      </Group>
-                      <Group gap={4} align="center">
-                        <Text fw={700} c="pink.5" style={{ fontSize: 22, lineHeight: 1 }}>♀</Text>
-                        <NumberInput
-                          value={femaleCount}
-                          onChange={(val: string | number) => setFemaleCount(mount.id, typeof val === 'number' ? val : 0)}
-                          min={0}
-                          size="xs"
-                          w={64}
-                          allowNegative={false}
-                        />
-                      </Group>
-                    </Group>
-
                     {/* Parents */}
                     {mount.parents && mount.parents.length > 0 ? (
-                      <Stack gap={4} align="center" w="100%">
+                      <Stack gap={6} align="center" w="100%">
                         <Text size="xs" tt="uppercase" fw={700} c="dimmed" lts={1}>Parents requis</Text>
-                        {mount.parents.map(([parentA, parentB], i) => {
+                        {(expandedParents.has(mount.id) ? mount.parents : mount.parents.slice(0, 1)).map(([parentA, parentB], i) => {
                           const mA = getMount(parentA);
                           const mB = getMount(parentB);
                           return (
                             <Group key={i} gap={4} justify="center" wrap="wrap">
                               <Group gap={4} wrap="nowrap">
-                                {mA?.sprite && (
-                                  <Image src={mA.sprite} alt={mA.name} w={24} h={24} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
-                                )}
+                                {mA?.sprite && <Image src={mA.sprite} alt={mA.name} w={24} h={24} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />}
                                 <Text size="xs" c="dark">{getMountName(parentA)}</Text>
                               </Group>
                               <Text size="xs" c="dimmed">+</Text>
                               <Group gap={4} wrap="nowrap">
-                                {mB?.sprite && (
-                                  <Image src={mB.sprite} alt={mB.name} w={24} h={24} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
-                                )}
+                                {mB?.sprite && <Image src={mB.sprite} alt={mB.name} w={24} h={24} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated', flexShrink: 0 }} />}
                                 <Text size="xs" c="dark">{getMountName(parentB)}</Text>
                               </Group>
                             </Group>
                           );
                         })}
+                        {mount.parents.length > 1 && (
+                          <UnstyledButton
+                            onClick={() => toggleParents(mount.id)}
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: 4,
+                              background: 'var(--mantine-color-gray-1)',
+                              border: '1px solid var(--mantine-color-gray-3)',
+                            }}
+                          >
+                            <Text size="xs" c="dimmed" fw={600}>
+                              {expandedParents.has(mount.id)
+                                ? '▲ Masquer'
+                                : `▼ +${mount.parents.length - 1} combinaison${mount.parents.length > 2 ? 's' : ''}`}
+                            </Text>
+                          </UnstyledButton>
+                        )}
                       </Stack>
                     ) : (
                       <Text size="xs" c="dimmed" fs="italic">Capture</Text>
