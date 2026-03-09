@@ -37,7 +37,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
   ];
 
   function isAchievementUnlocked(id: string): boolean {
-    if (id === 'meta') return mounts.length > 0 && mounts.every((m) => inventory[m.id]?.done);
+    if (id === 'meta') { const t = mounts.filter((m) => m.generation > 0); return t.length > 0 && t.every((m) => inventory[m.id]?.done); }
     const gen = parseInt(id.replace('gen_', ''));
     const genMounts = mounts.filter((m) => m.generation === gen);
     return genMounts.length > 0 && genMounts.every((m) => inventory[m.id]?.done);

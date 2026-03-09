@@ -201,7 +201,8 @@ export function ResumeTab({ mounts, achievements, metaAchievement }: ResumeTabPr
       ))}
 
       {metaAchievement && (() => {
-        const unlocked = mounts.length > 0 && mounts.every((m) => inventory[m.id]?.done);
+        const trackableMounts = mounts.filter((m) => m.generation > 0);
+        const unlocked = trackableMounts.length > 0 && trackableMounts.every((m) => inventory[m.id]?.done);
         return (
           <Tooltip label={metaAchievement.description} withArrow position="top">
             <Paper
