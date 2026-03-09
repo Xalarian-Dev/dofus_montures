@@ -20,6 +20,7 @@ const Echange = lazy(() => import('./pages/Echange'));
 const PolitiqueConfidentialite = lazy(() => import('./pages/PolitiqueConfidentialite'));
 const MentionsLegales = lazy(() => import('./pages/MentionsLegales'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Calculateur = lazy(() => import('./pages/Calculateur'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 
 export default function App() {
@@ -74,6 +75,7 @@ export default function App() {
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
                 <Route path="/mentions-legales" element={<MentionsLegales />} />
+                <Route path="/calculateur" element={<Calculateur />} />
                 <Route path="/profil" element={<Profile />} />
                 <Route path="/:username" element={<PublicProfile />} />
               </Routes>

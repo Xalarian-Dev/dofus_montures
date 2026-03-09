@@ -10,6 +10,7 @@ const links = [
   { href: '/muldos', label: 'Muldos' },
   { href: '/volkornes', label: 'Volkornes' },
   { href: '/caracteristiques', label: 'Caractéristiques' },
+  { href: '/calculateur', label: 'Calculateur' },
   { href: '/guide', label: 'Guide' },
   { href: '/echange', label: 'Échange', badge: true },
 ];

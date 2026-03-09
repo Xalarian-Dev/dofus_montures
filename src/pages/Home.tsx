@@ -1,6 +1,6 @@
 import { Container, SimpleGrid, Card, Title, Text, Group, Stack, Image, Box, ThemeIcon, Divider, Badge, Paper } from '@mantine/core';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookCheck, Target, ArrowLeftRight, BookOpen } from 'lucide-react';
+import { ArrowRight, BookCheck, Target, ArrowLeftRight, BookOpen, Calculator } from 'lucide-react';
 
 const categories = [
   {
@@ -51,6 +51,12 @@ const features = [
     title: 'Guide de référence',
     description: 'Toutes les mécaniques d\'élevage en un seul endroit : fertilité, sérénité, jauges d\'enclos, probabilités de génération, clonage et zones de capture.',
   },
+  {
+    icon: <Calculator size={20} />,
+    color: 'orange',
+    title: 'Calculateur d\'élevage',
+    description: 'Estimez le temps nécessaire pour monter les stats de vos montures. Le planificateur complet gère la Sérénité automatiquement et exploite les zones de recouvrement pour gagner plusieurs stats en simultané.',
+  },
 ];
 
 export default function Home() {
@@ -84,7 +90,7 @@ export default function Home() {
             <Divider style={{ flex: 1 }} color="gray.2" />
           </Group>
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            {features.map(({ icon, color, title, description }) => (
+            {(features.length % 2 !== 0 ? features.slice(0, -1) : features).map(({ icon, color, title, description }) => (
               <Paper key={title} withBorder p="lg" radius="md">
                 <Group gap="md" align="flex-start" wrap="nowrap">
                   <ThemeIcon color={color} variant="light" size={42} radius="md" style={{ flexShrink: 0 }}>
@@ -98,6 +104,24 @@ export default function Home() {
               </Paper>
             ))}
           </SimpleGrid>
+          {features.length % 2 !== 0 && (() => {
+            const { icon, color, title, description } = features[features.length - 1];
+            return (
+              <Group justify="center">
+                <Paper key={title} withBorder p="lg" radius="md" style={{ maxWidth: 'calc(50% - var(--mantine-spacing-md) / 2)' }}>
+                  <Group gap="md" align="flex-start" wrap="nowrap">
+                    <ThemeIcon color={color} variant="light" size={42} radius="md" style={{ flexShrink: 0 }}>
+                      {icon}
+                    </ThemeIcon>
+                    <Stack gap={6}>
+                      <Text fw={700} size="sm" c="dark">{title}</Text>
+                      <Text size="sm" c="dimmed" lh={1.6}>{description}</Text>
+                    </Stack>
+                  </Group>
+                </Paper>
+              </Group>
+            );
+          })()}
         </Stack>
 
         {/* Categories */}
