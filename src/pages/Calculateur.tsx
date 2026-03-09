@@ -228,7 +228,7 @@ function SimpleCalc() {
           <Stack gap="sm">
             {depleted && (
               <Alert color="orange" variant="light" icon={<TriangleAlert size={14} />}>
-                La jauge se videra avant d'atteindre la cible. Le temps affiché suppose un rechargement.
+                La jauge se videra avant d'atteindre la cible.
               </Alert>
             )}
             <SimpleGrid cols={2} spacing="sm">

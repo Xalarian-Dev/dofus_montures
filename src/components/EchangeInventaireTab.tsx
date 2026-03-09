@@ -119,9 +119,9 @@ export function EchangeInventaireTab() {
       </Group>
 
       {CATEGORIES.filter(({ key }) => catFilter === 'all' || catFilter === key).map(({ key, label, color, mounts }) => {
-        const filtered = normalizedSearch
-          ? mounts.filter((m) => normalize(m.name).includes(normalizedSearch))
-          : mounts;
+        const filtered = mounts
+          .filter((m) => m.generation !== 0)
+          .filter((m) => !normalizedSearch || normalize(m.name).includes(normalizedSearch));
         if (filtered.length === 0) return null;
         return (
         <Stack key={key} gap="sm">
