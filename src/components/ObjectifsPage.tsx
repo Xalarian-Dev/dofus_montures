@@ -286,10 +286,14 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
         size="sm"
       >
         <Stack gap="md">
-          {currentObjective?.targetType === 'succes' && (
-            <Paper withBorder p="sm" radius="md" bg="yellow.0" style={{ borderColor: 'var(--mantine-color-yellow-4)' }}>
-              <Text size="sm" c="yellow.8">
-                Vous avez déjà un objectif Succès (<strong>{allAchievements.find(a => a.id === currentObjective.targetId)?.achievement.name}</strong>). Il sera remplacé.
+          {currentObjective && (
+            <Paper withBorder p="sm" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-4)' }}>
+              <Text size="sm" c="orange.8">
+                {currentObjective.targetType === 'succes'
+                  ? <>Votre objectif actuel Succès (<strong>{allAchievements.find(a => a.id === currentObjective.targetId)?.achievement.name}</strong>) sera remplacé.</>
+                  : <>Votre objectif actuel (<strong>{breedableMounts.find(m => m.id === currentObjective.targetId)?.name}</strong>) sera remplacé.</>
+                }
+                {' '}La progression des étapes de la stratégie en cours sera perdue.
               </Text>
             </Paper>
           )}
@@ -311,10 +315,14 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
         size="sm"
       >
         <Stack gap="md">
-          {currentObjective?.targetType === 'monture' && (
-            <Paper withBorder p="sm" radius="md" bg="yellow.0" style={{ borderColor: 'var(--mantine-color-yellow-4)' }}>
-              <Text size="sm" c="yellow.8">
-                Vous avez déjà un objectif Monture (<strong>{breedableMounts.find(m => m.id === currentObjective.targetId)?.name}</strong>). Il sera remplacé.
+          {currentObjective && (
+            <Paper withBorder p="sm" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-4)' }}>
+              <Text size="sm" c="orange.8">
+                {currentObjective.targetType === 'monture'
+                  ? <>Votre objectif actuel Monture (<strong>{breedableMounts.find(m => m.id === currentObjective.targetId)?.name}</strong>) sera remplacé.</>
+                  : <>Votre objectif actuel (<strong>{allAchievements.find(a => a.id === currentObjective.targetId)?.achievement.name}</strong>) sera remplacé.</>
+                }
+                {' '}La progression des étapes de la stratégie en cours sera perdue.
               </Text>
             </Paper>
           )}
