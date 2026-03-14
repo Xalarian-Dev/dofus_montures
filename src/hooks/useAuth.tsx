@@ -13,9 +13,31 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * Read the Supabase session synchronously from localStorage.
+ * This avoids the async gap of getSession() that causes a flash in production.
+ */
+function getInitialSession(): { user: User | null; hasSession: boolean } {
+  try {
+    const storageKey = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'));
+    if (storageKey) {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const sessionUser = parsed?.user ?? parsed?.currentSession?.user;
+        if (sessionUser) return { user: sessionUser as User, hasSession: true };
+      }
+    }
+  } catch {
+    // Ignore parse errors — fall through to async resolution
+  }
+  return { user: null, hasSession: false };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const initial = getInitialSession();
+  const [user, setUser] = useState<User | null>(initial.user);
+  const [loading, setLoading] = useState(!initial.hasSession);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -25,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

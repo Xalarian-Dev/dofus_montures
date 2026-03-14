@@ -3,7 +3,8 @@ import {
   Container, Title, Text, Stack, Paper, Group, Slider, NumberInput,
   Badge, Divider, ThemeIcon, SegmentedControl, SimpleGrid, Alert, Collapse, UnstyledButton, List, Button,
 } from '@mantine/core';
-import { Clock, CalendarClock, TriangleAlert, Calculator } from 'lucide-react';
+import { Clock, CalendarClock, TriangleAlert, Calculator, TrendingUp } from 'lucide-react';
+import { xpToReachLevel, MOUNT_XP_CUMULATIVE } from '@/data/mountXp';
 
 // ─── Tier-based gauge drain calculation ──────────────────────────────────────
 
@@ -58,6 +59,14 @@ const STATS = [
 
 type StatKey = typeof STATS[number]['key'];
 
+/** Find the level a mount is at given its total cumulative XP. */
+function levelFromTotalXp(totalXp: number): number {
+  for (let i = MOUNT_XP_CUMULATIVE.length - 1; i >= 0; i--) {
+    if (totalXp >= MOUNT_XP_CUMULATIVE[i]) return i + 1;
+  }
+  return 1;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatSlider({
@@ -76,7 +85,8 @@ function StatSlider({
         </Group>
         <NumberInput
           value={value}
-          onChange={(v) => onChange(Math.max(min, Math.min(max, typeof v === 'number' ? v : min)))}
+          onChange={(v) => { if (typeof v === 'number') onChange(Math.max(min, Math.min(max, v))); }}
+          onFocus={(e) => e.target.select()}
           min={min} max={max} step={step}
           size="xs" w={100}
           allowNegative={min < 0}
@@ -99,7 +109,7 @@ function StatSlider({
 
 // ─── Simple Calculator ────────────────────────────────────────────────────────
 
-type CalcMode = StatKey | 'serenite';
+type CalcMode = StatKey | 'serenite' | 'experience';
 
 interface SimpleCalcResult {
   needed: number;
@@ -112,6 +122,18 @@ interface SimpleCalcResult {
   statLabel: string;
 }
 
+interface XpCalcResult {
+  currentLevel: number;
+  xpInLevel: number;
+  xpForCurrentLevel: number;
+  targetLevel: number;
+  xpRemaining: number;
+  drainSeconds: number;
+  drainDepleted: boolean;
+  drainDatetime: string;
+  reachableLevel: number;
+}
+
 function SimpleCalc() {
   const [mode, setMode] = useState<CalcMode>('endurance');
   const [current, setCurrent] = useState(0);
@@ -119,17 +141,63 @@ function SimpleCalc() {
   const [sereniteTarget, setSereniteTarget] = useState(-1000);
   const [result, setResult] = useState<SimpleCalcResult | null>(null);
 
+  // XP mode state
+  const [totalXp, setTotalXp] = useState(0);
+  const [xpTargetLevel, setXpTargetLevel] = useState(100);
+  const [xpResult, setXpResult] = useState<XpCalcResult | null>(null);
+
+  const isXp = mode === 'experience';
   const isSer = mode === 'serenite';
-  const statConf = isSer ? null : STATS.find((s) => s.key === mode)!;
+  const statConf = (isSer || isXp) ? null : STATS.find((s) => s.key === mode)!;
   const serDirection = sereniteTarget < current ? 'baisser' : 'monter';
 
   function handleCalculate() {
+    if (isXp) {
+      const currentLevel = levelFromTotalXp(totalXp);
+      const xpAtCurrentLevel = xpToReachLevel(currentLevel);
+      const xpInLevel = totalXp - xpAtCurrentLevel;
+      const xpForCurrentLevel = currentLevel < 200 ? xpToReachLevel(currentLevel + 1) - xpAtCurrentLevel : 0;
+      const xpAtTarget = xpToReachLevel(xpTargetLevel);
+      const xpRemaining = Math.max(0, xpAtTarget - totalXp);
+
+      // Time to reach target via gauge drain (1 gauge point = 1 XP)
+      const { seconds: drainSeconds, depleted: drainDepleted } = calcDrainSeconds(gaugeFill, xpRemaining);
+
+      // Level reachable with current gauge (drain entire gauge)
+      const { actualDrained } = calcDrainSeconds(gaugeFill, gaugeFill);
+      const reachableXp = totalXp + actualDrained;
+      const reachableLevel = levelFromTotalXp(reachableXp);
+
+      setXpResult({
+        currentLevel,
+        xpInLevel,
+        xpForCurrentLevel,
+        targetLevel: xpTargetLevel,
+        xpRemaining,
+        drainSeconds,
+        drainDepleted,
+        drainDatetime: formatDatetime(drainSeconds, Date.now()),
+        reachableLevel,
+      });
+      return;
+    }
+
     const needed = isSer ? Math.abs(sereniteTarget - current) : Math.max(0, 20000 - current);
     const ready = isSer ? current === sereniteTarget : current >= 20000;
     const { seconds, depleted, actualDrained } = calcDrainSeconds(gaugeFill, needed);
     const statLabel = isSer ? 'Sérénité' : (statConf?.label ?? '');
     setResult({ needed, actualDrained, seconds, depleted, datetime: formatDatetime(seconds, Date.now()), ready, isSer, statLabel });
   }
+
+  function handleModeChange(v: string) {
+    setMode(v as CalcMode);
+    setCurrent(0);
+    setResult(null);
+    setXpResult(null);
+  }
+
+  const maxXp = MOUNT_XP_CUMULATIVE[MOUNT_XP_CUMULATIVE.length - 1];
+  const derivedLevel = isXp ? levelFromTotalXp(totalXp) : 0;
 
   return (
     <Paper withBorder p="lg" radius="md">
@@ -146,16 +214,18 @@ function SimpleCalc() {
           <Text size="sm" fw={600} c="dark">Statistique à monter</Text>
           <SegmentedControl
             value={mode}
-            onChange={(v) => { setMode(v as CalcMode); setCurrent(0); setResult(null); }}
+            onChange={handleModeChange}
             data={[
               ...STATS.map((s) => ({ value: s.key, label: s.label })),
               { value: 'serenite', label: 'Sérénité' },
+              { value: 'experience', label: 'Expérience' },
             ]}
             fullWidth
           />
         </Stack>
 
-        {!isSer && statConf && (
+        {/* Stat mode inputs */}
+        {!isSer && !isXp && statConf && (
           <StatSlider
             label={`${statConf.label} actuelle`}
             color={statConf.color}
@@ -165,6 +235,7 @@ function SimpleCalc() {
           />
         )}
 
+        {/* Sérénité mode inputs */}
         {isSer && (
           <>
             <StatSlider
@@ -198,15 +269,42 @@ function SimpleCalc() {
           </>
         )}
 
+        {/* Experience mode inputs */}
+        {isXp && (
+          <>
+            <NumberInput
+              label="Expérience totale de la monture"
+              description={`Niveau actuel : ${derivedLevel}`}
+              value={totalXp}
+              onChange={(v) => { setTotalXp(Math.max(0, typeof v === 'number' ? v : 0)); setXpResult(null); }}
+              min={0}
+              max={maxXp}
+              size="sm"
+              thousandSeparator=" "
+            />
+            <NumberInput
+              label="Niveau cible"
+              value={xpTargetLevel}
+              onChange={(v) => { setXpTargetLevel(Math.max(2, Math.min(200, typeof v === 'number' ? v : 2))); setXpResult(null); }}
+              min={2}
+              max={200}
+              size="sm"
+            />
+          </>
+        )}
+
+        {/* Gauge slider — shared by all modes */}
         <StatSlider
           label="Niveau de la jauge"
           color="gray"
           value={gaugeFill}
-          onChange={(v) => { setGaugeFill(v); setResult(null); }}
+          onChange={(v) => { setGaugeFill(v); setResult(null); setXpResult(null); }}
           max={100000}
           step={1000}
           extra={
-            isSer ? (
+            isXp ? (
+              <Badge color="green" variant="filled" size="sm">Expérience</Badge>
+            ) : isSer ? (
               <Badge color={serDirection === 'baisser' ? 'violet' : 'grape'} variant="filled" size="sm">
                 {serDirection === 'baisser' ? 'Sérénité −' : 'Sérénité +'}
               </Badge>
@@ -216,11 +314,22 @@ function SimpleCalc() {
           }
         />
 
-        <Button color="orange" fullWidth onClick={handleCalculate} leftSection={<Clock size={14} />}>
+        <Button
+          color={isXp ? 'green' : 'orange'}
+          fullWidth
+          onClick={handleCalculate}
+          leftSection={isXp ? <TrendingUp size={14} /> : <Clock size={14} />}
+          disabled={isXp && xpTargetLevel <= derivedLevel}
+        >
           Calculer
         </Button>
 
-        {result && (
+        {isXp && xpTargetLevel <= derivedLevel && (
+          <Text size="xs" c="dimmed" ta="center">Le niveau cible doit être supérieur au niveau actuel ({derivedLevel}).</Text>
+        )}
+
+        {/* Stat / Sérénité results */}
+        {!isXp && result && (
           <>
             <Divider color="gray.2" />
             {result.ready ? (
@@ -262,6 +371,73 @@ function SimpleCalc() {
                     </Stack>
                   </Group>
                 </Paper>
+              </Stack>
+            )}
+          </>
+        )}
+
+        {/* XP results */}
+        {isXp && xpResult && (
+          <>
+            <Divider color="gray.2" />
+            {xpResult.xpRemaining === 0 ? (
+              <Paper withBorder p="md" radius="md" bg="green.0" style={{ borderColor: 'var(--mantine-color-green-4)' }}>
+                <Text size="sm" fw={700} c="green.7">Niveau cible déjà atteint !</Text>
+              </Paper>
+            ) : (
+              <Stack gap="sm">
+                {xpResult.drainDepleted && (
+                  <Alert color="red" variant="light" icon={<TriangleAlert size={14} />}>
+                    La jauge se videra avant d'atteindre le niveau cible.
+                  </Alert>
+                )}
+                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+                  <Paper withBorder p="md" radius="md" bg="gray.0">
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Niveau actuel</Text>
+                      <Group gap={4} align="baseline">
+                        <Text fw={700} size="lg" c="dark">{xpResult.currentLevel}</Text>
+                        {xpResult.xpForCurrentLevel > 0 && (
+                          <Text size="xs" c="dimmed">({xpResult.xpInLevel.toLocaleString('fr-FR')} / {xpResult.xpForCurrentLevel.toLocaleString('fr-FR')} XP)</Text>
+                        )}
+                      </Group>
+                    </Stack>
+                  </Paper>
+                  <Paper withBorder p="md" radius="md" bg="gray.0">
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>XP restante</Text>
+                      <Text fw={700} size="lg" c="dark">{xpResult.xpRemaining.toLocaleString('fr-FR')} XP</Text>
+                    </Stack>
+                  </Paper>
+                  <Paper withBorder p="md" radius="md" bg="gray.0">
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Temps estimé</Text>
+                      <Text fw={700} size="lg" c="dark">{formatDuration(xpResult.drainSeconds)}</Text>
+                    </Stack>
+                  </Paper>
+                </SimpleGrid>
+                <SimpleGrid cols={{ base: 1, sm: xpResult.drainDepleted ? 1 : 2 }} spacing="sm">
+                  {!xpResult.drainDepleted && (
+                    <Paper withBorder p="md" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
+                      <Group gap="sm" wrap="nowrap">
+                        <CalendarClock size={16} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0 }} />
+                        <Stack gap={0}>
+                          <Text size="xs" c="dimmed">Niveau {xpResult.targetLevel} atteint le</Text>
+                          <Text fw={700} size="sm" c="orange.7">{xpResult.drainDatetime}</Text>
+                        </Stack>
+                      </Group>
+                    </Paper>
+                  )}
+                  <Paper withBorder p="md" radius="md" bg="green.0" style={{ borderColor: 'var(--mantine-color-green-3)' }}>
+                    <Group gap="sm" wrap="nowrap">
+                      <TrendingUp size={16} color="var(--mantine-color-green-6)" style={{ flexShrink: 0 }} />
+                      <Stack gap={0}>
+                        <Text size="xs" c="dimmed">Niveau atteignable avec la jauge</Text>
+                        <Text fw={700} size="sm" c="green.7">Niveau {xpResult.reachableLevel}</Text>
+                      </Stack>
+                    </Group>
+                  </Paper>
+                </SimpleGrid>
               </Stack>
             )}
           </>
