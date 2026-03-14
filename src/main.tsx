@@ -5,6 +5,7 @@ import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import './index.css';
 import App from './App';
+import { AuthProvider } from './hooks/useAuth';
 
 const theme = createTheme({
   primaryColor: 'orange',
@@ -26,7 +27,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MantineProvider theme={theme}>
       <Notifications position="bottom-right" />
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </MantineProvider>
   </StrictMode>,
 );

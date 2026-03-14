@@ -3,11 +3,14 @@ import { AppShell, Box } from '@mantine/core';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { BackToTop } from './components/BackToTop';
+import { LoadingScreen } from './components/LoadingScreen';
 import { supabase } from './lib/supabase';
 import { HEADER_GRADIENT } from './lib/constants';
 import { useBreedingStore } from './store/useBreedingStore';
+import { useAuth } from './hooks/useAuth';
 import { CookieBanner } from './components/CookieBanner';
 import { Footer } from './components/Footer';
+import { MessagesProvider } from './contexts/MessagesContext';
 
 const Home = lazy(() => import('./pages/Home'));
 const Dragodindes = lazy(() => import('./pages/Dragodindes'));
@@ -24,6 +27,7 @@ const Calculateur = lazy(() => import('./pages/Calculateur'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 
 export default function App() {
+  const { loading: authLoading } = useAuth();
   const loadFromSupabase = useBreedingStore((s) => s.loadFromSupabase);
 
   useEffect(() => {
@@ -46,8 +50,11 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [loadFromSupabase]);
 
+  if (authLoading) return <LoadingScreen />;
+
   return (
     <BrowserRouter>
+      <MessagesProvider>
       <AppShell header={{ height: 60 }} bg="orange.1">
         <AppShell.Header
           style={{
@@ -63,7 +70,7 @@ export default function App() {
           <BackToTop />
           <CookieBanner />
           <Box style={{ flex: 1 }}>
-            <Suspense fallback={null}>
+            <Suspense fallback={<LoadingScreen />}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/dragodindes" element={<Dragodindes />} />
@@ -84,6 +91,7 @@ export default function App() {
           <Footer />
         </AppShell.Main>
       </AppShell>
+      </MessagesProvider>
     </BrowserRouter>
   );
 }

@@ -7,7 +7,7 @@ import {
 import { ArrowLeft, MessageCircle, Swords, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import { useMessages } from '@/hooks/useMessages';
+import { useMessagesContext } from '@/contexts/MessagesContext';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
@@ -36,8 +36,8 @@ interface Listing {
 export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const { getOrCreateConversation } = useMessages(user?.id);
+  const { user } = useAuth();
+  const { getOrCreateConversation } = useMessagesContext();
 
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -49,11 +49,11 @@ export default function PublicProfilePage() {
       setLoading(true);
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('user_id, username, full_name, avatar_url, ingame_name')
+        .select('user_id, username, full_name, avatar_url, ingame_name, is_visible')
         .eq('username', username!)
         .maybeSingle();
 
-      if (!profileData) { setNotFound(true); setLoading(false); return; }
+      if (!profileData || profileData.is_visible === false) { setNotFound(true); setLoading(false); return; }
 
       setProfile({
         userId: profileData.user_id,
@@ -86,7 +86,7 @@ export default function PublicProfilePage() {
     if (convId) navigate('/echange');
   }
 
-  if (loading || authLoading) return <Center py="xl"><Loader color="orange" /></Center>;
+  if (loading) return <Center py="xl"><Loader color="orange" /></Center>;
 
   if (!user) {
     return (
@@ -110,8 +110,8 @@ export default function PublicProfilePage() {
     return (
       <Container size="sm" py="xl">
         <Stack align="center" gap="md">
-          <Text fw={700} size="lg">Joueur introuvable</Text>
-          <Text c="dimmed" size="sm">Aucun profil ne correspond à « {username} ».</Text>
+          <Text fw={700} size="lg">Profil indisponible</Text>
+          <Text c="dimmed" size="sm">Ce profil n'existe pas ou n'est pas visible publiquement.</Text>
           <Button variant="default" leftSection={<ArrowLeft size={14} />} onClick={() => navigate(-1)}>Retour</Button>
         </Stack>
       </Container>

@@ -10,7 +10,8 @@ import { ArrowLeft, Send, MessageCircle, ArrowLeftRight, Plus, Minus, Globe, Use
 import { useAuth } from '@/hooks/useAuth';
 import { useTrade, UserTrade } from '@/hooks/useTrade';
 import { useBreedingStore } from '@/store/useBreedingStore';
-import { useMessages, Conversation } from '@/hooks/useMessages';
+import { useMessagesContext } from '@/contexts/MessagesContext';
+import type { Conversation } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { EchangeInventaireTab } from '@/components/EchangeInventaireTab';
 import { dragodindes } from '@/data/mounts/dragodindes';
@@ -430,7 +431,7 @@ function MessagesTab({
   initialConversationId?: string | null;
 }) {
   const { user } = useAuth();
-  const { conversations, messages, profiles, fetchMessages, sendMessage } = useMessages(user?.id);
+  const { conversations, messages, profiles, fetchMessages, sendMessage } = useMessagesContext();
   const [selectedId, setSelectedId] = useState<string | null>(initialConversationId ?? null);
 
   useEffect(() => {
@@ -508,13 +509,13 @@ function MessagesTab({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function EchangePage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile(user?.id);
-  const { getOrCreateConversation, unreadTotal } = useMessages(user?.id);
-  const [activeTab, setActiveTab] = useState<string | null>('inventaire');
+  const { getOrCreateConversation, unreadTotal } = useMessagesContext();
+  const VALID_TABS = ['inventaire', 'offres', 'messages'];
+  const hashTab = window.location.hash.replace('#', '');
+  const [activeTab, setActiveTab] = useState<string | null>(VALID_TABS.includes(hashTab) ? hashTab : 'inventaire');
   const [pendingConvId, setPendingConvId] = useState<string | null>(null);
-
-  if (loading) return null;
 
   async function handleContact(otherUserId: string) {
     if (!user) return;
@@ -543,11 +544,11 @@ export default function EchangePage() {
           <Alert color="blue" variant="light" icon={<UserX size={16} />}>
             Définissez un nom public dans{' '}
             <Anchor component={Link as any} to="/profil" size="sm">votre profil</Anchor>
-            {' '}pour utiliser la messagerie.
+            {' '}pour que les autres joueurs puissent vous identifier.
           </Alert>
         )}
 
-        <Tabs value={activeTab} onChange={setActiveTab} color="orange">
+        <Tabs value={activeTab} onChange={(v) => { setActiveTab(v); window.location.hash = v || ''; }} color="orange">
           <Tabs.List mb="lg">
             <Tabs.Tab value="inventaire" leftSection={<PackageOpen size={14} />}>
               Inventaire

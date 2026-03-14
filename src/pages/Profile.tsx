@@ -104,7 +104,7 @@ export default function ProfilePage() {
 
             <Stack gap="xs">
               <Text size="sm" fw={600}>Nom public</Text>
-              <Text size="xs" c="dimmed">Affiché dans la page Échange. Doit être unique.</Text>
+              <Text size="xs" c="dimmed">Affiché dans la page Échange.</Text>
               <Group gap="sm" align="flex-start">
                 <TextInput
                   placeholder={profile.username || 'Choisir un nom...'}

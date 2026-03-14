@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { Link, useLocation } from 'react-router-dom';
 import { LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useMessages } from '@/hooks/useMessages';
+import { useMessagesContext } from '@/contexts/MessagesContext';
 
 const links = [
   { href: '/dragodindes', label: 'Dragodindes' },
@@ -19,7 +19,7 @@ export function Navigation() {
   const { pathname } = useLocation();
   const { user, signInWithGoogle, signInWithDiscord, signOut } = useAuth();
   const [opened, { open, close }] = useDisclosure(false);
-  const { unreadTotal } = useMessages(user?.id);
+  const { unreadTotal } = useMessagesContext();
 
   return (
     <>
@@ -61,15 +61,18 @@ export function Navigation() {
         <Group justify="flex-end" gap="sm">
           {user ? (
             <>
-              <Anchor component={Link as any} to="/profil" style={{ lineHeight: 0 }}>
-                <Avatar size="sm" radius="xl" style={{ cursor: 'pointer' }}>
-                  <img
-                    src={user.user_metadata?.avatar_url}
-                    alt={user.user_metadata?.full_name}
-                    referrerPolicy="no-referrer"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </Avatar>
+              <Anchor component={Link as any} to="/profil" td="none" style={{ lineHeight: 0 }}>
+                <Group gap={6} align="center">
+                  <Avatar size="sm" radius="xl" style={{ cursor: 'pointer' }}>
+                    <img
+                      src={user.user_metadata?.avatar_url}
+                      alt={user.user_metadata?.full_name}
+                      referrerPolicy="no-referrer"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </Avatar>
+                  <Text size="xs" fw={600} c="white">Profil</Text>
+                </Group>
               </Anchor>
               <Button
                 variant="white"

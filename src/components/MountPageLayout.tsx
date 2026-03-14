@@ -3,6 +3,13 @@ import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { ResumeTab } from '@/components/ResumeTab';
 import { ObjectifsPage } from '@/components/ObjectifsPage';
 
+const VALID_TABS = ['resume', 'objectifs'];
+
+function getTabFromHash(): string {
+  const hash = window.location.hash.replace('#', '');
+  return VALID_TABS.includes(hash) ? hash : 'resume';
+}
+
 interface MountPageLayoutProps {
   title: string;
   subtitle: string;
@@ -21,7 +28,7 @@ export function MountPageLayout({ title, subtitle, mounts, color, achievements, 
           <Text c="dimmed">{subtitle}</Text>
         </Stack>
 
-        <Tabs defaultValue="resume" color={color}>
+        <Tabs defaultValue={getTabFromHash()} color={color} onChange={(v) => { window.location.hash = v || ''; }}>
           <Tabs.List mb="lg">
             <Tabs.Tab value="resume">Résumé</Tabs.Tab>
             <Tabs.Tab value="objectifs">Objectifs</Tabs.Tab>
