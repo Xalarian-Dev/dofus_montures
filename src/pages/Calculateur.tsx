@@ -477,12 +477,19 @@ interface StatPhase {
 
 type PhasePlan = SerenitePhase | StatPhase;
 
+interface GaugeFills {
+  endurance: number;  // Foudroyeur
+  maturite: number;   // Abreuvoir
+  amour: number;      // Dragofesse
+  serenite: number;   // Baffeurs / Caresseurs
+}
+
 function buildPlan(
   startSer: number,
   endurance: number,
   maturite: number,
   amour: number,
-  gaugeFill: number,
+  gauges: GaugeFills,
 ): PhasePlan[] {
   const plans: PhasePlan[] = [];
   let endNeeded = Math.max(0, 20000 - endurance);
@@ -498,10 +505,14 @@ function buildPlan(
   function addSerPhase(target: number) {
     if (target === currentSer) return;
     const needed = Math.abs(target - currentSer);
-    const { seconds, depleted } = calcDrainSeconds(gaugeFill, needed);
+    const { seconds, depleted } = calcDrainSeconds(gauges.serenite, needed);
     const gauge = target < currentSer ? 'Baffeurs (Sérénité −)' : 'Caresseurs (Sérénité +)';
     plans.push({ type: 'serenite', from: currentSer, to: target, gauge, needed, seconds, depleted });
     currentSer = target;
+  }
+
+  function gaugeFor(key: StatKey): number {
+    return gauges[key];
   }
 
   const doEndFirst = currentSer < 0;
@@ -514,10 +525,10 @@ function buildPlan(
 
     if (endNeeded > 0) {
       const inOverlap = currentSer >= -2000 && currentSer < 0;
-      const endResult = calcDrainSeconds(gaugeFill, endNeeded);
+      const endResult = calcDrainSeconds(gaugeFor('endurance'), endNeeded);
       if (inOverlap && matNeeded > 0) {
         const matGained = Math.min(matNeeded, endNeeded);
-        const matResult = calcDrainSeconds(gaugeFill, matGained);
+        const matResult = calcDrainSeconds(gaugeFor('maturite'), matGained);
         addStatPhase([
           { key: 'endurance', label: 'Endurance', color: 'yellow', needed: endNeeded, ...endResult },
           { key: 'maturite',  label: 'Maturité',  color: 'blue',   needed: matGained,  ...matResult },
@@ -534,11 +545,11 @@ function buildPlan(
     if (amourNeeded > 0) {
       const targetSer = matNeeded > 0 ? 2000 : 0;
       addSerPhase(targetSer);
-      const amourResult = calcDrainSeconds(gaugeFill, amourNeeded);
+      const amourResult = calcDrainSeconds(gaugeFor('amour'), amourNeeded);
       const inOverlap = currentSer >= 0 && currentSer <= 2000;
       if (inOverlap && matNeeded > 0) {
         const matGained = Math.min(matNeeded, amourNeeded);
-        const matResult = calcDrainSeconds(gaugeFill, matGained);
+        const matResult = calcDrainSeconds(gaugeFor('maturite'), matGained);
         addStatPhase([
           { key: 'amour',    label: 'Amour',    color: 'red',  needed: amourNeeded, ...amourResult },
           { key: 'maturite', label: 'Maturité', color: 'blue', needed: matGained,   ...matResult },
@@ -560,10 +571,10 @@ function buildPlan(
 
     if (amourNeeded > 0) {
       const inOverlap = currentSer >= 0 && currentSer <= 2000;
-      const amourResult = calcDrainSeconds(gaugeFill, amourNeeded);
+      const amourResult = calcDrainSeconds(gaugeFor('amour'), amourNeeded);
       if (inOverlap && matNeeded > 0) {
         const matGained = Math.min(matNeeded, amourNeeded);
-        const matResult = calcDrainSeconds(gaugeFill, matGained);
+        const matResult = calcDrainSeconds(gaugeFor('maturite'), matGained);
         addStatPhase([
           { key: 'amour',    label: 'Amour',    color: 'red',  needed: amourNeeded, ...amourResult },
           { key: 'maturite', label: 'Maturité', color: 'blue', needed: matGained,   ...matResult },
@@ -580,11 +591,11 @@ function buildPlan(
     if (endNeeded > 0) {
       const targetSer = matNeeded > 0 ? -2000 : -1;
       addSerPhase(targetSer);
-      const endResult = calcDrainSeconds(gaugeFill, endNeeded);
+      const endResult = calcDrainSeconds(gaugeFor('endurance'), endNeeded);
       const inOverlap = currentSer >= -2000 && currentSer < 0;
       if (inOverlap && matNeeded > 0) {
         const matGained = Math.min(matNeeded, endNeeded);
-        const matResult = calcDrainSeconds(gaugeFill, matGained);
+        const matResult = calcDrainSeconds(gaugeFor('maturite'), matGained);
         addStatPhase([
           { key: 'endurance', label: 'Endurance', color: 'yellow', needed: endNeeded, ...endResult },
           { key: 'maturite',  label: 'Maturité',  color: 'blue',   needed: matGained,  ...matResult },
@@ -604,7 +615,7 @@ function buildPlan(
     if (currentSer < -2000 || currentSer > 2000) {
       addSerPhase(0);
     }
-    const matResult = calcDrainSeconds(gaugeFill, matNeeded);
+    const matResult = calcDrainSeconds(gaugeFor('maturite'), matNeeded);
     addStatPhase([
       { key: 'maturite', label: 'Maturité', color: 'blue', needed: matNeeded, ...matResult },
     ], 'Sérénité neutre — Maturité seule');
@@ -681,14 +692,20 @@ function FullPlanner() {
   const [maturite, setMaturite] = useState(0);
   const [amour, setAmour] = useState(0);
   const [startSer, setStartSer] = useState(0);
-  const [gaugeFill, setGaugeFill] = useState(100000);
+  const [gaugeEnd, setGaugeEnd] = useState(100000);
+  const [gaugeMat, setGaugeMat] = useState(100000);
+  const [gaugeAmour, setGaugeAmour] = useState(100000);
+  const [gaugeSer, setGaugeSer] = useState(100000);
   const [result, setResult] = useState<FullPlannerResult | null>(null);
 
   function handleCalculate() {
-    const plan = buildPlan(startSer, endurance, maturite, amour, gaugeFill);
+    const gauges: GaugeFills = { endurance: gaugeEnd, maturite: gaugeMat, amour: gaugeAmour, serenite: gaugeSer };
+    const plan = buildPlan(startSer, endurance, maturite, amour, gauges);
     const totalSeconds = plan.reduce((sum, p) => sum + p.seconds, 0);
     setResult({ plan, totalSeconds, datetime: formatDatetime(totalSeconds, Date.now()) });
   }
+
+  const clearResult = () => setResult(null);
 
   return (
     <Paper withBorder p="lg" radius="md">
@@ -705,25 +722,56 @@ function FullPlanner() {
           Planifie automatiquement les phases selon la Sérénité de départ, en exploitant les zones de recouvrement (−2 000 à −1 et 0 à +2 000) pour gagner Maturité + Endurance ou Amour en simultané.
         </Text>
 
-        <StatSlider label="Endurance actuelle" color="yellow" value={endurance} onChange={(v) => { setEndurance(v); setResult(null); }} />
-        <StatSlider label="Maturité actuelle" color="blue" value={maturite} onChange={(v) => { setMaturite(v); setResult(null); }} />
-        <StatSlider label="Amour actuel" color="red" value={amour} onChange={(v) => { setAmour(v); setResult(null); }} />
+        <StatSlider label="Endurance actuelle" color="yellow" value={endurance} onChange={(v) => { setEndurance(v); clearResult(); }} />
+        <StatSlider label="Maturité actuelle" color="blue" value={maturite} onChange={(v) => { setMaturite(v); clearResult(); }} />
+        <StatSlider label="Amour actuel" color="red" value={amour} onChange={(v) => { setAmour(v); clearResult(); }} />
         <StatSlider
           label="Sérénité de départ"
           color="grape"
           value={startSer}
-          onChange={(v) => { setStartSer(v); setResult(null); }}
+          onChange={(v) => { setStartSer(v); clearResult(); }}
           min={-5000}
           max={5000}
           step={100}
         />
+
+        <Divider label="Niveaux des jauges d'enclos" labelPosition="center" color="gray.3" />
+
         <StatSlider
-          label="Niveau de jauge au début de chaque phase"
-          color="gray"
-          value={gaugeFill}
-          onChange={(v) => { setGaugeFill(v); setResult(null); }}
+          label="Foudroyeur"
+          color="yellow"
+          value={gaugeEnd}
+          onChange={(v) => { setGaugeEnd(v); clearResult(); }}
           max={100000}
           step={1000}
+          extra={<Badge color="yellow" variant="filled" size="sm">Endurance</Badge>}
+        />
+        <StatSlider
+          label="Abreuvoir"
+          color="blue"
+          value={gaugeMat}
+          onChange={(v) => { setGaugeMat(v); clearResult(); }}
+          max={100000}
+          step={1000}
+          extra={<Badge color="blue" variant="filled" size="sm">Maturité</Badge>}
+        />
+        <StatSlider
+          label="Dragofesse"
+          color="red"
+          value={gaugeAmour}
+          onChange={(v) => { setGaugeAmour(v); clearResult(); }}
+          max={100000}
+          step={1000}
+          extra={<Badge color="red" variant="filled" size="sm">Amour</Badge>}
+        />
+        <StatSlider
+          label="Baffeurs / Caresseurs"
+          color="grape"
+          value={gaugeSer}
+          onChange={(v) => { setGaugeSer(v); clearResult(); }}
+          max={100000}
+          step={1000}
+          extra={<Badge color="grape" variant="filled" size="sm">Sérénité</Badge>}
         />
 
         <Button color="teal" fullWidth onClick={handleCalculate} leftSection={<CalendarClock size={14} />}>

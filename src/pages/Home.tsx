@@ -108,7 +108,7 @@ export default function Home() {
             const { icon, color, title, description } = features[features.length - 1];
             return (
               <Group justify="center">
-                <Paper key={title} withBorder p="lg" radius="md" maw="calc(50% - var(--mantine-spacing-md) / 2)">
+                <Paper key={title} withBorder p="lg" radius="md" w={{ base: '100%', sm: 'calc(50% - var(--mantine-spacing-md) / 2)' }}>
                   <Group gap="md" align="flex-start" wrap="nowrap">
                     <ThemeIcon color={color} variant="light" size={42} radius="md" style={{ flexShrink: 0 }}>
                       {icon}
