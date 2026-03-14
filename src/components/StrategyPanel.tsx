@@ -1,4 +1,4 @@
-import { Stack, Paper, Text, Group, Badge, SimpleGrid, Image, Divider, ThemeIcon, Checkbox, Switch, SegmentedControl } from '@mantine/core';
+import { Stack, Paper, Text, Group, Badge, SimpleGrid, Image, Divider, ThemeIcon, Checkbox, Switch, SegmentedControl, NumberInput } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { useMemo } from 'react';
 import { Sword, ArrowRight, Egg, Heart } from 'lucide-react';
@@ -48,14 +48,28 @@ function groupBreedsByMount(breeds: BreedingBreed[]) {
 
 export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementId }: StrategyPanelProps) {
   const inventory = useBreedingStore((s) => s.inventory);
-  const setDone = useBreedingStore((s) => s.setDone);
+  const setStepDone = useBreedingStore((s) => s.setStepDone);
+  const setStepCount = useBreedingStore((s) => s.setStepCount);
   const [hideDone, setHideDone] = useLocalStorage({ key: 'strategy-hide-done', defaultValue: false });
+
+  function isStepDone(mountId: string) {
+    return inventory[mountId]?.stepDone ?? false;
+  }
+
+  function getStepCount(mountId: string) {
+    return inventory[mountId]?.stepCount ?? 0;
+  }
   const [mode, setMode] = useLocalStorage<StrategyMode>({ key: 'strategy-mode', defaultValue: 'simple' });
 
+  const ownedIds = useMemo(
+    () => new Set(Object.entries(inventory).filter(([, v]) => v?.done).map(([k]) => k)),
+    [inventory],
+  );
+
   const strategy = useMemo(() => {
-    if (achievementId) return buildSuccesStrategy(achievementId, allMounts, allowCloning, mode);
+    if (achievementId) return buildSuccesStrategy(achievementId, allMounts, allowCloning, mode, ownedIds);
     return buildStrategy(targetIds ?? [], allMounts, allowCloning, mode);
-  }, [achievementId, targetIds, allMounts, allowCloning, mode]);
+  }, [achievementId, targetIds, allMounts, allowCloning, mode, ownedIds]);
 
   const { targets, captures, totalCaptures, steps, totalBreeds } = strategy;
   const remaining = targets.filter((m) => !inventory[m.id]?.done).length;
@@ -139,8 +153,8 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
             </Badge>
           </Group>
           <Stack gap="xs">
-            {captures.filter(({ mount }) => !hideDone || !inventory[mount.id]?.done).map(({ mount, count }) => {
-              const done = inventory[mount.id]?.done ?? false;
+            {captures.filter(({ mount }) => !hideDone || !isStepDone(mount.id)).map(({ mount, count }) => {
+              const done = isStepDone(mount.id);
               return (
                 <Paper
                   key={mount.id}
@@ -152,16 +166,29 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                 >
                   <Group justify="space-between" wrap="nowrap">
                     <Group gap="sm" wrap="nowrap">
-                      {count > 1 && <Badge color="red" variant="filled" size="sm">{count}×</Badge>}
                       <MountChip mount={mount} />
                     </Group>
-                    <Checkbox
-                      size="xs"
-                      color="green"
-                      checked={done}
-                      onChange={(e) => setDone(mount.id, e.currentTarget.checked)}
-                      label={done ? 'Obtenu' : 'À capturer'}
-                    />
+                    <Group gap="xs" wrap="nowrap">
+                      <Group gap={4} wrap="nowrap" align="center">
+                        <NumberInput
+                          value={getStepCount(mount.id)}
+                          onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
+                          min={0}
+                          max={count}
+                          size="xs"
+                          w={52}
+                          allowNegative={false}
+                        />
+                        <Text size="sm" fw={700} c="dark">/ {count}</Text>
+                      </Group>
+                      <Checkbox
+                        size="xs"
+                        color="green"
+                        checked={done}
+                        onChange={(e) => setStepDone(mount.id, e.currentTarget.checked)}
+                        label={done ? 'Fait' : 'À capturer'}
+                      />
+                    </Group>
                   </Group>
                 </Paper>
               );
@@ -186,10 +213,10 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
           </Group>
           <Stack gap="xs">
             {groupBreedsByMount(step.breeds)
-              .filter((group) => !hideDone || !inventory[group[0].mount.id]?.done)
+              .filter((group) => !hideDone || !isStepDone(group[0].mount.id))
               .map((group) => {
                 const { mount } = group[0];
-                const done = inventory[mount.id]?.done ?? false;
+                const done = isStepDone(mount.id);
                 const totalCount = group.reduce((s, b) => s + b.count, 0);
 
                 return (
@@ -205,9 +232,6 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                       /* Simple: single pair row with optional "N combinaisons" badge */
                       <Group justify="space-between" wrap="nowrap" align="center">
                         <Group gap="sm" wrap="wrap" align="center">
-                          {totalCount > 1 && (
-                            <Badge color="red" variant="filled" size="sm">{totalCount}×</Badge>
-                          )}
                           <MountChip mount={group[0].parents[0]} />
                           <Text c="dimmed" size="sm">+</Text>
                           <MountChip mount={group[0].parents[1]} />
@@ -227,23 +251,34 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                             </Badge>
                           )}
                         </Group>
-                        <Checkbox
-                          size="xs"
-                          color="green"
-                          checked={done}
-                          onChange={(e) => setDone(mount.id, e.currentTarget.checked)}
-                          label={done ? 'Obtenu' : 'À élever'}
-                          style={{ flexShrink: 0 }}
-                        />
+                        <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+                          <Group gap={4} wrap="nowrap" align="center">
+                            <NumberInput
+                              value={getStepCount(mount.id)}
+                              onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
+                              min={0}
+                              max={totalCount}
+                              size="xs"
+                              w={52}
+                              allowNegative={false}
+                            />
+                            <Text size="sm" fw={700} c="dark">/ {totalCount}</Text>
+                          </Group>
+                          <Checkbox
+                            size="xs"
+                            color="green"
+                            checked={done}
+                            onChange={(e) => setStepDone(mount.id, e.currentTarget.checked)}
+                            label={done ? 'Fait' : 'À élever'}
+                            style={{ flexShrink: 0 }}
+                          />
+                        </Group>
                       </Group>
                     ) : (
                       /* Optimisé: mount header + one sub-row per pair */
                       <>
                         <Group justify="space-between" wrap="nowrap" align="center" mb={group.length > 1 ? 'xs' : 0}>
                           <Group gap="sm" wrap="nowrap">
-                            {totalCount > 1 && (
-                              <Badge color="red" variant="filled" size="sm">{totalCount}×</Badge>
-                            )}
                             <Group gap={6} wrap="nowrap">
                               {mount.sprite && (
                                 <Image src={mount.sprite} alt={mount.name} w={32} h={32} fit="contain" loading="lazy" style={{ imageRendering: 'pixelated' }} />
@@ -254,14 +289,28 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                               </Stack>
                             </Group>
                           </Group>
-                          <Checkbox
-                            size="xs"
-                            color="green"
-                            checked={done}
-                            onChange={(e) => setDone(mount.id, e.currentTarget.checked)}
-                            label={done ? 'Obtenu' : 'À élever'}
-                            style={{ flexShrink: 0 }}
-                          />
+                          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+                            <Group gap={4} wrap="nowrap" align="center">
+                              <NumberInput
+                                value={getStepCount(mount.id)}
+                                onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
+                                min={0}
+                                max={totalCount}
+                                size="xs"
+                                w={52}
+                                allowNegative={false}
+                              />
+                              <Text size="sm" fw={700} c="dark">/ {totalCount}</Text>
+                            </Group>
+                            <Checkbox
+                              size="xs"
+                              color="green"
+                              checked={done}
+                              onChange={(e) => setStepDone(mount.id, e.currentTarget.checked)}
+                              label={done ? 'Fait' : 'À élever'}
+                              style={{ flexShrink: 0 }}
+                            />
+                          </Group>
                         </Group>
                         <Stack
                           gap={4}

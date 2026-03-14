@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:www.dofuspourlesnoobs.com)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm list @mantine/charts recharts)",
+      "Bash(npm list @mantine/core @mantine/charts)"
     ]
   }
 }

@@ -232,11 +232,13 @@ export function buildSuccesStrategy(
   allMounts: MountSpecies[],
   allowCloning = false,
   mode: StrategyMode = 'simple',
+  ownedIds: Set<string> = new Set(),
 ): BreedingStrategy {
   const breedableMounts = allMounts.filter((m) => m.generation > 0);
 
   if (achievementId === 'meta') {
-    return buildStrategy(breedableMounts.map((m) => m.id), allMounts, allowCloning, mode);
+    const targetIds = breedableMounts.filter((m) => !ownedIds.has(m.id)).map((m) => m.id);
+    return buildStrategy(targetIds, allMounts, allowCloning, mode);
   }
 
   const gen = parseInt(achievementId.replace('gen_', ''), 10);
@@ -244,15 +246,18 @@ export function buildSuccesStrategy(
 
   if (gen === 1) {
     const gen1 = breedableMounts.filter((m) => m.generation === 1);
+    const needed = gen1.filter((m) => !ownedIds.has(m.id));
     return {
       targets: gen1,
-      captures: gen1.map((m) => ({ mount: m, count: 1 })),
-      totalCaptures: gen1.length,
+      captures: needed.map((m) => ({ mount: m, count: 1 })),
+      totalCaptures: needed.length,
       steps: [],
       totalBreeds: 0,
     };
   }
 
-  const targetIds = breedableMounts.filter((m) => m.generation === gen).map((m) => m.id);
+  const targetIds = breedableMounts
+    .filter((m) => m.generation === gen && !ownedIds.has(m.id))
+    .map((m) => m.id);
   return buildStrategy(targetIds, allMounts, allowCloning, mode);
 }

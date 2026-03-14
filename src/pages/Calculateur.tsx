@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Container, Title, Text, Stack, Paper, Group, Slider, NumberInput,
-  Badge, Divider, ThemeIcon, SegmentedControl, SimpleGrid, Alert, Collapse, UnstyledButton, List,
+  Badge, Divider, ThemeIcon, SegmentedControl, SimpleGrid, Alert, Collapse, UnstyledButton, List, Button,
 } from '@mantine/core';
 import { Clock, CalendarClock, TriangleAlert, Calculator } from 'lucide-react';
 
@@ -14,7 +14,7 @@ const TIERS = [
   { floor: 0,     rate: 10 }, // Tier 1: 0 – 40 000
 ];
 
-function calcDrainSeconds(startFill: number, toDrain: number): { seconds: number; depleted: boolean } {
+function calcDrainSeconds(startFill: number, toDrain: number): { seconds: number; depleted: boolean; actualDrained: number } {
   let fill = Math.max(0, Math.min(startFill, 100000));
   let remaining = toDrain;
   let totalSeconds = 0;
@@ -28,7 +28,7 @@ function calcDrainSeconds(startFill: number, toDrain: number): { seconds: number
     fill -= canDrain;
   }
 
-  return { seconds: totalSeconds, depleted: remaining > 0 };
+  return { seconds: totalSeconds, depleted: remaining > 0, actualDrained: toDrain - remaining };
 }
 
 function formatDuration(seconds: number): string {
@@ -46,15 +46,6 @@ function formatDatetime(seconds: number, now: number): string {
     weekday: 'long', day: 'numeric', month: 'long',
     hour: '2-digit', minute: '2-digit',
   });
-}
-
-function useNow(intervalMs = 30000): number {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
 }
 
 // ─── Stat config ─────────────────────────────────────────────────────────────
@@ -110,26 +101,35 @@ function StatSlider({
 
 type CalcMode = StatKey | 'serenite';
 
+interface SimpleCalcResult {
+  needed: number;
+  actualDrained: number;
+  seconds: number;
+  depleted: boolean;
+  datetime: string;
+  ready: boolean;
+  isSer: boolean;
+  statLabel: string;
+}
+
 function SimpleCalc() {
-  const now = useNow();
   const [mode, setMode] = useState<CalcMode>('endurance');
   const [current, setCurrent] = useState(0);
   const [gaugeFill, setGaugeFill] = useState(100000);
-  // Sérénité-specific
   const [sereniteTarget, setSereniteTarget] = useState(-1000);
+  const [result, setResult] = useState<SimpleCalcResult | null>(null);
 
   const isSer = mode === 'serenite';
   const statConf = isSer ? null : STATS.find((s) => s.key === mode)!;
-
-  // Sérénité: gauge = Baffeurs (lower) or Caresseurs (raise)
   const serDirection = sereniteTarget < current ? 'baisser' : 'monter';
-  const serGauge = sereniteTarget < current ? 'Baffeurs (Sérénité −)' : 'Caresseurs (Sérénité +)';
-  const needed = isSer
-    ? Math.abs(sereniteTarget - current)
-    : Math.max(0, 20000 - current);
 
-  const { seconds, depleted } = calcDrainSeconds(gaugeFill, needed);
-  const ready = isSer ? current === sereniteTarget : current >= 20000;
+  function handleCalculate() {
+    const needed = isSer ? Math.abs(sereniteTarget - current) : Math.max(0, 20000 - current);
+    const ready = isSer ? current === sereniteTarget : current >= 20000;
+    const { seconds, depleted, actualDrained } = calcDrainSeconds(gaugeFill, needed);
+    const statLabel = isSer ? 'Sérénité' : (statConf?.label ?? '');
+    setResult({ needed, actualDrained, seconds, depleted, datetime: formatDatetime(seconds, Date.now()), ready, isSer, statLabel });
+  }
 
   return (
     <Paper withBorder p="lg" radius="md">
@@ -146,7 +146,7 @@ function SimpleCalc() {
           <Text size="sm" fw={600} c="dark">Statistique à monter</Text>
           <SegmentedControl
             value={mode}
-            onChange={(v) => { setMode(v as CalcMode); setCurrent(v === 'serenite' ? 0 : 0); }}
+            onChange={(v) => { setMode(v as CalcMode); setCurrent(0); setResult(null); }}
             data={[
               ...STATS.map((s) => ({ value: s.key, label: s.label })),
               { value: 'serenite', label: 'Sérénité' },
@@ -160,7 +160,7 @@ function SimpleCalc() {
             label={`${statConf.label} actuelle`}
             color={statConf.color}
             value={current}
-            onChange={setCurrent}
+            onChange={(v) => { setCurrent(v); setResult(null); }}
             max={20000}
           />
         )}
@@ -171,7 +171,7 @@ function SimpleCalc() {
               label="Sérénité actuelle"
               color="grape"
               value={current}
-              onChange={setCurrent}
+              onChange={(v) => { setCurrent(v); setResult(null); }}
               min={-5000}
               max={5000}
               step={100}
@@ -180,7 +180,7 @@ function SimpleCalc() {
               label="Sérénité cible"
               color="violet"
               value={sereniteTarget}
-              onChange={setSereniteTarget}
+              onChange={(v) => { setSereniteTarget(v); setResult(null); }}
               min={-5000}
               max={5000}
               step={100}
@@ -202,7 +202,7 @@ function SimpleCalc() {
           label="Niveau de la jauge"
           color="gray"
           value={gaugeFill}
-          onChange={setGaugeFill}
+          onChange={(v) => { setGaugeFill(v); setResult(null); }}
           max={100000}
           step={1000}
           extra={
@@ -216,45 +216,55 @@ function SimpleCalc() {
           }
         />
 
-        <Divider color="gray.2" />
+        <Button color="orange" fullWidth onClick={handleCalculate} leftSection={<Clock size={14} />}>
+          Calculer
+        </Button>
 
-        {ready ? (
-          <Paper withBorder p="md" radius="md" bg="green.0" style={{ borderColor: 'var(--mantine-color-green-4)' }}>
-            <Text size="sm" fw={700} c="green.7">
-              {isSer ? 'Sérénité déjà dans la plage cible !' : 'Stat déjà au maximum !'}
-            </Text>
-          </Paper>
-        ) : (
-          <Stack gap="sm">
-            {depleted && (
-              <Alert color="red" variant="light" icon={<TriangleAlert size={14} />}>
-                La jauge se videra avant d'atteindre la cible.
-              </Alert>
+        {result && (
+          <>
+            <Divider color="gray.2" />
+            {result.ready ? (
+              <Paper withBorder p="md" radius="md" bg="green.0" style={{ borderColor: 'var(--mantine-color-green-4)' }}>
+                <Text size="sm" fw={700} c="green.7">
+                  {result.isSer ? 'Sérénité déjà dans la plage cible !' : 'Stat déjà au maximum !'}
+                </Text>
+              </Paper>
+            ) : (
+              <Stack gap="sm">
+                {result.depleted && (
+                  <Alert color="red" variant="light" icon={<TriangleAlert size={14} />}>
+                    La jauge se videra avant d'atteindre la cible.
+                  </Alert>
+                )}
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                  <Paper withBorder p="md" radius="md" bg="gray.0">
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Résultat — {result.statLabel}</Text>
+                      <Group gap={4} align="baseline">
+                        <Text fw={700} size="lg" c={result.depleted ? 'red.6' : 'dark'}>{result.actualDrained.toLocaleString('fr-FR')}</Text>
+                        <Text size="sm" c="dimmed">/ {result.needed.toLocaleString('fr-FR')} pts</Text>
+                      </Group>
+                    </Stack>
+                  </Paper>
+                  <Paper withBorder p="md" radius="md" bg="gray.0">
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Temps estimé</Text>
+                      <Text fw={700} size="lg" c="dark">{formatDuration(result.seconds)}</Text>
+                    </Stack>
+                  </Paper>
+                </SimpleGrid>
+                <Paper withBorder p="md" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
+                  <Group gap="sm" wrap="nowrap">
+                    <CalendarClock size={16} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0 }} />
+                    <Stack gap={0}>
+                      <Text size="xs" c="dimmed">{result.isSer ? 'Sérénité atteinte le' : 'Sortir la monture le'}</Text>
+                      <Text fw={700} size="sm" c="orange.7">{result.datetime}</Text>
+                    </Stack>
+                  </Group>
+                </Paper>
+              </Stack>
             )}
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-              <Paper withBorder p="md" radius="md" bg="gray.0">
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Points manquants</Text>
-                  <Text fw={700} size="lg" c="dark">{needed.toLocaleString('fr-FR')}</Text>
-                </Stack>
-              </Paper>
-              <Paper withBorder p="md" radius="md" bg="gray.0">
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Temps estimé</Text>
-                  <Text fw={700} size="lg" c="dark">{formatDuration(seconds)}</Text>
-                </Stack>
-              </Paper>
-            </SimpleGrid>
-            <Paper withBorder p="md" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
-              <Group gap="sm" wrap="nowrap">
-                <CalendarClock size={16} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0 }} />
-                <Stack gap={0}>
-                  <Text size="xs" c="dimmed">{isSer ? 'Sérénité atteinte le' : 'Sortir la monture le'}</Text>
-                  <Text fw={700} size="sm" c="orange.7">{formatDatetime(seconds, now)}</Text>
-                </Stack>
-              </Group>
-            </Paper>
-          </Stack>
+          </>
         )}
       </Stack>
     </Paper>
@@ -484,17 +494,25 @@ function PhaseCard({ phase, step }: { phase: PhasePlan; step: number }) {
   );
 }
 
+interface FullPlannerResult {
+  plan: PhasePlan[];
+  totalSeconds: number;
+  datetime: string;
+}
+
 function FullPlanner() {
   const [endurance, setEndurance] = useState(0);
   const [maturite, setMaturite] = useState(0);
   const [amour, setAmour] = useState(0);
   const [startSer, setStartSer] = useState(0);
   const [gaugeFill, setGaugeFill] = useState(100000);
+  const [result, setResult] = useState<FullPlannerResult | null>(null);
 
-  const now = useNow();
-  const plan = buildPlan(startSer, endurance, maturite, amour, gaugeFill);
-  const totalSeconds = plan.reduce((sum, p) => sum + p.seconds, 0);
-  const allDone = plan.length === 0;
+  function handleCalculate() {
+    const plan = buildPlan(startSer, endurance, maturite, amour, gaugeFill);
+    const totalSeconds = plan.reduce((sum, p) => sum + p.seconds, 0);
+    setResult({ plan, totalSeconds, datetime: formatDatetime(totalSeconds, Date.now()) });
+  }
 
   return (
     <Paper withBorder p="lg" radius="md">
@@ -511,14 +529,14 @@ function FullPlanner() {
           Planifie automatiquement les phases selon la Sérénité de départ, en exploitant les zones de recouvrement (−2 000 à −1 et 0 à +2 000) pour gagner Maturité + Endurance ou Amour en simultané.
         </Text>
 
-        <StatSlider label="Endurance actuelle" color="yellow" value={endurance} onChange={setEndurance} />
-        <StatSlider label="Maturité actuelle" color="blue" value={maturite} onChange={setMaturite} />
-        <StatSlider label="Amour actuel" color="red" value={amour} onChange={setAmour} />
+        <StatSlider label="Endurance actuelle" color="yellow" value={endurance} onChange={(v) => { setEndurance(v); setResult(null); }} />
+        <StatSlider label="Maturité actuelle" color="blue" value={maturite} onChange={(v) => { setMaturite(v); setResult(null); }} />
+        <StatSlider label="Amour actuel" color="red" value={amour} onChange={(v) => { setAmour(v); setResult(null); }} />
         <StatSlider
           label="Sérénité de départ"
           color="grape"
           value={startSer}
-          onChange={setStartSer}
+          onChange={(v) => { setStartSer(v); setResult(null); }}
           min={-5000}
           max={5000}
           step={100}
@@ -527,38 +545,45 @@ function FullPlanner() {
           label="Niveau de jauge au début de chaque phase"
           color="gray"
           value={gaugeFill}
-          onChange={setGaugeFill}
+          onChange={(v) => { setGaugeFill(v); setResult(null); }}
           max={100000}
           step={1000}
         />
 
-        <Divider color="gray.2" />
+        <Button color="teal" fullWidth onClick={handleCalculate} leftSection={<CalendarClock size={14} />}>
+          Calculer
+        </Button>
 
-        {allDone ? (
-          <Paper withBorder p="md" radius="md" bg="green.0" style={{ borderColor: 'var(--mantine-color-green-4)' }}>
-            <Text fw={700} size="sm" c="green.7">Toutes les stats sont au maximum — la monture est prête !</Text>
-          </Paper>
-        ) : (
-          <Stack gap="sm">
-            {plan.map((phase, i) => (
-              <PhaseCard key={i} phase={phase} step={i + 1} />
-            ))}
+        {result && (
+          <>
+            <Divider color="gray.2" />
+            {result.plan.length === 0 ? (
+              <Paper withBorder p="md" radius="md" bg="green.0" style={{ borderColor: 'var(--mantine-color-green-4)' }}>
+                <Text fw={700} size="sm" c="green.7">Toutes les stats sont au maximum — la monture est prête !</Text>
+              </Paper>
+            ) : (
+              <Stack gap="sm">
+                {result.plan.map((phase, i) => (
+                  <PhaseCard key={i} phase={phase} step={i + 1} />
+                ))}
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mt="xs">
-              <Paper withBorder p="md" radius="md" bg="gray.0">
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Durée totale</Text>
-                  <Text fw={700} size="xl" c="dark">{formatDuration(totalSeconds)}</Text>
-                </Stack>
-              </Paper>
-              <Paper withBorder p="md" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Sortir la monture le</Text>
-                  <Text fw={700} size="sm" c="orange.7">{formatDatetime(totalSeconds, now)}</Text>
-                </Stack>
-              </Paper>
-            </SimpleGrid>
-          </Stack>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mt="xs">
+                  <Paper withBorder p="md" radius="md" bg="gray.0">
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Durée totale</Text>
+                      <Text fw={700} size="xl" c="dark">{formatDuration(result.totalSeconds)}</Text>
+                    </Stack>
+                  </Paper>
+                  <Paper withBorder p="md" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" tt="uppercase" lts={0.5}>Sortir la monture le</Text>
+                      <Text fw={700} size="sm" c="orange.7">{result.datetime}</Text>
+                    </Stack>
+                  </Paper>
+                </SimpleGrid>
+              </Stack>
+            )}
+          </>
         )}
       </Stack>
     </Paper>

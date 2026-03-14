@@ -14,6 +14,8 @@ interface BreedingState {
   setMaleCount: (mountId: string, count: number) => void;
   setFemaleCount: (mountId: string, count: number) => void;
   setDone: (mountId: string, done: boolean) => void;
+  setStepDone: (mountId: string, stepDone: boolean) => void;
+  setStepCount: (mountId: string, stepCount: number) => void;
   setWanted: (mountId: string, gender: 'male' | 'female', wanted: boolean) => void;
   setObjective: (category: MountCategory, targetId: string, targetType: 'monture' | 'succes') => Promise<void>;
   setAllowCloning: (category: MountCategory, allowCloning: boolean) => Promise<void>;
@@ -22,13 +24,15 @@ interface BreedingState {
   resetAll: (userId: string) => Promise<void>;
 }
 
-async function upsertToSupabase(userId: string, mountId: string, maleCount: number, femaleCount: number, done: boolean) {
+async function upsertToSupabase(userId: string, mountId: string, maleCount: number, femaleCount: number, done: boolean, stepDone?: boolean, stepCount?: number) {
   await supabase.from('breeding_inventory').upsert({
     user_id: userId,
     mount_id: mountId,
     male_count: maleCount,
     female_count: femaleCount,
     done,
+    ...(stepDone !== undefined ? { step_done: stepDone } : {}),
+    ...(stepCount !== undefined ? { step_count: stepCount } : {}),
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,mount_id' });
 }
@@ -98,6 +102,43 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     });
   },
 
+  setStepDone: (mountId, stepDone) => {
+    set((state) => ({
+      inventory: {
+        ...state.inventory,
+        [mountId]: {
+          ...state.inventory[mountId],
+          stepDone,
+          // Checking a step also marks the mount as obtained in résumé
+          ...(stepDone ? { done: true } : {}),
+        },
+      },
+    }));
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        const entry = get().inventory[mountId];
+        const effectiveDone = stepDone ? true : (entry?.done ?? false);
+        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, effectiveDone, stepDone);
+      }
+    });
+  },
+
+  setStepCount: (mountId, stepCount) => {
+    const clamped = Math.max(0, stepCount);
+    set((state) => ({
+      inventory: {
+        ...state.inventory,
+        [mountId]: { ...state.inventory[mountId], stepCount: clamped },
+      },
+    }));
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        const entry = get().inventory[mountId];
+        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, entry?.stepDone, clamped);
+      }
+    });
+  },
+
   removeObjective: async (category) => {
     set((state) => {
       const next = { ...state.objectives };
@@ -143,7 +184,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
 
   loadFromSupabase: async (userId) => {
     const [inventoryRes, objectivesRes] = await Promise.all([
-      supabase.from('breeding_inventory').select('mount_id, male_count, female_count, done').eq('user_id', userId),
+      supabase.from('breeding_inventory').select('mount_id, male_count, female_count, done, step_done, step_count').eq('user_id', userId),
       supabase.from('user_objectives').select('category, target_id, target_type, allow_cloning').eq('user_id', userId),
     ]);
 
@@ -154,6 +195,8 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
           maleCount: row.male_count,
           femaleCount: row.female_count,
           done: row.done ?? false,
+          stepDone: row.step_done ?? false,
+          stepCount: row.step_count ?? 0,
         };
       }
       set({ inventory });
