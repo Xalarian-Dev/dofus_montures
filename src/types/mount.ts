@@ -17,6 +17,8 @@ export interface BreedingInventory {
     done?: boolean;
     stepDone?: boolean;
     stepCount?: number;
+    stepMaleCount?: number;
+    stepFemaleCount?: number;
   };
 }
 

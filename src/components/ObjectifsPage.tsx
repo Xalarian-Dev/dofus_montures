@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Stack, Paper, Text, SegmentedControl, SimpleGrid, Image, Badge, UnstyledButton, TextInput, Modal, Group, Button, Flex, Checkbox, Center, Collapse, Divider, List } from '@mantine/core';
+import { Stack, Paper, Text, SegmentedControl, SimpleGrid, Image, Badge, UnstyledButton, TextInput, Modal, Group, Button, Flex, Center, Collapse, Divider, List } from '@mantine/core';
 import { Trash2 } from 'lucide-react';
 import { Search, Lock } from 'lucide-react';
 import { GenerationAchievement, MountSpecies } from '@/types/mount';
@@ -19,12 +19,11 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
   const [pendingMount, setPendingMount] = useState<MountSpecies | null>(null);
   const [pendingAchievementId, setPendingAchievementId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const { objectives, allowCloningByCategory, inventory, setObjective, setAllowCloning, removeObjective } = useBreedingStore();
+  const { objectives, inventory, setObjective, removeObjective } = useBreedingStore();
   const category = mounts[0]?.category;
   const currentObjective = category ? objectives[category] : undefined;
   const currentObjectiveId = currentObjective?.targetType === 'monture' ? currentObjective.targetId : undefined;
   const currentSuccesId = currentObjective?.targetType === 'succes' ? currentObjective.targetId : undefined;
-  const allowCloning = (category ? allowCloningByCategory[category] : undefined) ?? currentObjective?.allowCloning ?? false;
 
   // Sync tab to match the saved objective type once loaded from DB
   useEffect(() => {
@@ -91,16 +90,19 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
             <Text size="sm">Les montures marquées <Text component="span" fw={600}>« Fait »</Text> dans l'onglet <Text component="span" fw={600}>Résumé</Text> sont considérées comme acquises : la stratégie les exclut et ne vous demande que ce qu'il manque encore.</Text>
           </List.Item>
           <List.Item>
-            <Text size="sm"><Text component="span" fw={600}>Autoriser le clonage</Text> permet de dupliquer une monture sans accouplement, réduisant le nombre de croisements nécessaires. <Text component="span" fw={600} c="orange.7">Préférez les montures stériles comme cibles de clonage</Text> — détruire une monture fertile réduit votre capacité d'élevage.</Text>
-          </List.Item>
-          <List.Item>
-            <Text size="sm">La stratégie établie ne considère <Text component="span" fw={600}>QUE le clonage via 2 montures de même couleur</Text> — libre à vous de tenter d'autres possibilités.</Text>
+            <Text size="sm"><Text component="span" fw={600}>Autoriser le clonage</Text> permet de dupliquer une monture sans accouplement, réduisant le nombre de croisements nécessaires. <Text component="span" fw={600} c="orange.7">Préférez les montures stériles comme cibles de clonage</Text> — détruire une monture fertile réduit votre capacité d'élevage. La stratégie ne considère <Text component="span" fw={600}>QUE le clonage via 2 montures de même couleur</Text> — libre à vous de tenter d'autres possibilités.</Text>
           </List.Item>
           <List.Item>
             <Text size="sm">Le mode <Text component="span" fw={600}>Optimisé</Text> distribue la production sur toutes les combinaisons de parents possibles, réduisant la charge sur chaque couple. Le mode <Text component="span" fw={600}>Simple</Text> recommande une seule combinaison par monture et indique le nombre d'alternatives disponibles.</Text>
           </List.Item>
           <List.Item>
-            <Text size="sm"><Text component="span" fw={600} c="orange.7">Non pris en compte :</Text> la généalogie des montures (parenté) et les probabilités d'obtenir un bébé de génération supérieure. La stratégie suppose que chaque croisement aboutit.</Text>
+            <Text size="sm">La <Text component="span" fw={600}>probabilité de génération supérieure</Text> est un indicateur visuel qui estime le nombre d'essais nécessaires en fonction de votre taux de réussite réel (niveau, Optimakina…). Elle <Text component="span" fw={600}>ne modifie pas</Text> les quantités requises — seul le nombre d'essais estimé est affiché à côté de chaque étape.</Text>
+          </List.Item>
+          <List.Item>
+            <Text size="sm">Les compteurs <Text component="span" fw={600}>♂ / ♀</Text> sur chaque étape vous permettent de suivre votre avancement sans modifier votre inventaire principal. Cochez une étape pour la marquer comme terminée.</Text>
+          </List.Item>
+          <List.Item>
+            <Text size="sm"><Text component="span" fw={600} c="orange.7">Non pris en compte :</Text> la généalogie des montures (parenté). La stratégie ne vérifie pas les liens de parenté entre vos montures existantes.</Text>
           </List.Item>
         </List>
       </Collapse>
@@ -140,14 +142,6 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
           w="fit-content"
         />
         <Group gap="sm">
-          {currentObjective && (
-            <Checkbox
-              label="Autoriser le Clonage"
-              checked={allowCloning}
-              onChange={(e) => category && setAllowCloning(category, e.currentTarget.checked)}
-              size="sm"
-            />
-          )}
           {((type === 'monture' && currentObjective?.targetType === 'monture') ||
             (type === 'succes' && currentObjective?.targetType === 'succes')) && (
             <Button
@@ -265,7 +259,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
       )}
 
       {type === 'succes' && currentSuccesId && (
-        <StrategyPanel achievementId={currentSuccesId} allMounts={mounts} allowCloning={allowCloning} />
+        <StrategyPanel achievementId={currentSuccesId} allMounts={mounts} />
       )}
 
       {type === 'monture' && !currentObjectiveId && filteredMounts.length === 0 && search && (
@@ -275,7 +269,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
       )}
 
       {type === 'monture' && currentObjectiveId && (
-        <StrategyPanel targetIds={[currentObjectiveId]} allMounts={mounts} allowCloning={allowCloning} />
+        <StrategyPanel targetIds={[currentObjectiveId]} allMounts={mounts} />
       )}
 
       <Modal

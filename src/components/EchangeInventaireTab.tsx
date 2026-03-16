@@ -169,9 +169,11 @@ export function EchangeInventaireTab() {
                           value={maleCount}
                           onChange={(val) => setMaleCount(mount.id, typeof val === 'number' ? val : 0)}
                           min={0}
+                          max={999}
                           size="sm"
                           w={64}
                           allowNegative={false}
+                          onFocus={(e) => e.target.select()}
                         />
                       </Group>
                       {/* Female count */}
@@ -181,9 +183,11 @@ export function EchangeInventaireTab() {
                           value={femaleCount}
                           onChange={(val) => setFemaleCount(mount.id, typeof val === 'number' ? val : 0)}
                           min={0}
+                          max={999}
                           size="sm"
                           w={64}
                           allowNegative={false}
+                          onFocus={(e) => e.target.select()}
                         />
                       </Group>
 

@@ -1,4 +1,4 @@
-import { Stack, Paper, Text, Group, Badge, SimpleGrid, Image, Divider, ThemeIcon, Checkbox, Switch, SegmentedControl, NumberInput } from '@mantine/core';
+import { Stack, Paper, Text, Group, Badge, SimpleGrid, Image, Divider, ThemeIcon, Checkbox, Switch, SegmentedControl, NumberInput, Slider } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { useMemo } from 'react';
 import { Sword, ArrowRight, Egg, Heart } from 'lucide-react';
@@ -9,7 +9,6 @@ import { useBreedingStore } from '@/store/useBreedingStore';
 
 interface StrategyPanelProps {
   allMounts: MountSpecies[];
-  allowCloning: boolean;
   targetIds?: string[];
   achievementId?: string;
 }
@@ -46,10 +45,16 @@ function groupBreedsByMount(breeds: BreedingBreed[]) {
   return [...map.values()];
 }
 
-export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementId }: StrategyPanelProps) {
+export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyPanelProps) {
   const inventory = useBreedingStore((s) => s.inventory);
+  const allowCloningByCategory = useBreedingStore((s) => s.allowCloningByCategory);
+  const setAllowCloning = useBreedingStore((s) => s.setAllowCloning);
+  const category = allMounts[0]?.category;
+  const allowCloning = (category ? allowCloningByCategory[category] : undefined) ?? false;
   const setStepDone = useBreedingStore((s) => s.setStepDone);
   const setStepCount = useBreedingStore((s) => s.setStepCount);
+  const setStepMaleCount = useBreedingStore((s) => s.setStepMaleCount);
+  const setStepFemaleCount = useBreedingStore((s) => s.setStepFemaleCount);
   const [hideDone, setHideDone] = useLocalStorage({ key: 'strategy-hide-done', defaultValue: false });
 
   function isStepDone(mountId: string) {
@@ -59,7 +64,16 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
   function getStepCount(mountId: string) {
     return inventory[mountId]?.stepCount ?? 0;
   }
+
+  function getStepMaleCount(mountId: string) {
+    return inventory[mountId]?.stepMaleCount ?? 0;
+  }
+
+  function getStepFemaleCount(mountId: string) {
+    return inventory[mountId]?.stepFemaleCount ?? 0;
+  }
   const [mode, setMode] = useLocalStorage<StrategyMode>({ key: 'strategy-mode', defaultValue: 'simple' });
+  const [successRate, setSuccessRate] = useLocalStorage<number>({ key: 'strategy-success-rate', defaultValue: 100 });
 
   const ownedIds = useMemo(
     () => new Set(Object.entries(inventory).filter(([, v]) => v?.done).map(([k]) => k)),
@@ -107,6 +121,7 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
           </Badge>
           <Badge color="violet" variant="light" size="sm" leftSection={<Heart size={10} />}>
             {totalBreeds} accouplement{totalBreeds > 1 ? 's' : ''}
+            {successRate < 100 && ` (~${Math.ceil(totalBreeds / (successRate / 100))} essais)`}
           </Badge>
           {steps.map((s) => (
             <Badge key={s.generation} color="gray" variant="light" size="sm">
@@ -132,11 +147,48 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
             <Text size="xs" c="dimmed">Production distribuée sur toutes les combinaisons</Text>
           )}
         </Group>
-        <Switch
+        <Group gap="sm">
+          <Checkbox
+            size="xs"
+            label="Autoriser le Clonage"
+            checked={allowCloning}
+            onChange={(e) => category && setAllowCloning(category, e.currentTarget.checked)}
+          />
+          <Switch
+            size="xs"
+            label="Masquer les étapes terminées"
+            checked={hideDone}
+            onChange={(e) => setHideDone(e.currentTarget.checked)}
+          />
+        </Group>
+      </Group>
+
+      {/* Success rate slider */}
+      <Group gap="xs" align="flex-end" wrap="wrap">
+        <Text size="xs" fw={600} c="dimmed" style={{ whiteSpace: 'nowrap' }}>Probabilité :</Text>
+        <Slider
+          value={successRate}
+          onChange={setSuccessRate}
+          min={30}
+          max={100}
+          step={5}
+          marks={[30, 40, 50, 60, 70, 80, 90, 100].map((v) => ({
+            value: v,
+            label: (
+              <Text
+                size="10px"
+                fw={v === successRate ? 700 : 400}
+                c={v === successRate ? 'orange.6' : 'dimmed'}
+              >
+                {v}%
+              </Text>
+            ),
+          }))}
+          label={(v) => `${v}%`}
+          color="orange"
           size="xs"
-          label="Masquer les étapes terminées"
-          checked={hideDone}
-          onChange={(e) => setHideDone(e.currentTarget.checked)}
+          style={{ flex: 1, minWidth: 200 }}
+          mb={16}
         />
       </Group>
 
@@ -164,11 +216,37 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                   bg={done ? 'green.0' : 'white'}
                   style={{ borderColor: done ? 'var(--mantine-color-green-4)' : undefined }}
                 >
-                  <Group justify="space-between" wrap="nowrap">
+                  <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="sm" wrap="nowrap">
                       <MountChip mount={mount} />
                     </Group>
                     <Group gap="xs" wrap="nowrap">
+                      <Group gap={4} wrap="nowrap" align="center">
+                        <Text size="xs" c="blue.5" fw={600}>♂</Text>
+                        <NumberInput
+                          value={getStepMaleCount(mount.id)}
+                          onChange={(v) => setStepMaleCount(mount.id, typeof v === 'number' ? v : 0)}
+                          min={0}
+                          max={999}
+                          size="xs"
+                          w={52}
+                          allowNegative={false}
+                          onFocus={(e) => e.target.select()}
+                        />
+                      </Group>
+                      <Group gap={4} wrap="nowrap" align="center">
+                        <Text size="xs" c="pink.5" fw={600}>♀</Text>
+                        <NumberInput
+                          value={getStepFemaleCount(mount.id)}
+                          onChange={(v) => setStepFemaleCount(mount.id, typeof v === 'number' ? v : 0)}
+                          min={0}
+                          max={999}
+                          size="xs"
+                          w={52}
+                          allowNegative={false}
+                          onFocus={(e) => e.target.select()}
+                        />
+                      </Group>
                       <Group gap={4} wrap="nowrap" align="center">
                         <NumberInput
                           value={getStepCount(mount.id)}
@@ -178,6 +256,7 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                           size="xs"
                           w={52}
                           allowNegative={false}
+                          onFocus={(e) => e.target.select()}
                         />
                         <Text size="sm" fw={700} c="dark">/ {count}</Text>
                       </Group>
@@ -210,6 +289,11 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
             <Badge color="violet" variant="light" size="xs">
               {step.totalCount} accouplement{step.totalCount > 1 ? 's' : ''}
             </Badge>
+            {successRate < 100 && (
+              <Badge color="orange" variant="light" size="xs">
+                ~{Math.ceil(step.totalCount / (successRate / 100))} essais
+              </Badge>
+            )}
           </Group>
           <Stack gap="xs">
             {groupBreedsByMount(step.breeds)
@@ -253,6 +337,32 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                         </Group>
                         <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
                           <Group gap={4} wrap="nowrap" align="center">
+                            <Text size="xs" c="blue.5" fw={600}>♂</Text>
+                            <NumberInput
+                              value={getStepMaleCount(mount.id)}
+                              onChange={(v) => setStepMaleCount(mount.id, typeof v === 'number' ? v : 0)}
+                              min={0}
+                              max={999}
+                              size="xs"
+                              w={52}
+                              allowNegative={false}
+                              onFocus={(e) => e.target.select()}
+                            />
+                          </Group>
+                          <Group gap={4} wrap="nowrap" align="center">
+                            <Text size="xs" c="pink.5" fw={600}>♀</Text>
+                            <NumberInput
+                              value={getStepFemaleCount(mount.id)}
+                              onChange={(v) => setStepFemaleCount(mount.id, typeof v === 'number' ? v : 0)}
+                              min={0}
+                              max={999}
+                              size="xs"
+                              w={52}
+                              allowNegative={false}
+                              onFocus={(e) => e.target.select()}
+                            />
+                          </Group>
+                          <Group gap={4} wrap="nowrap" align="center">
                             <NumberInput
                               value={getStepCount(mount.id)}
                               onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
@@ -261,8 +371,12 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                               size="xs"
                               w={52}
                               allowNegative={false}
+                              onFocus={(e) => e.target.select()}
                             />
                             <Text size="sm" fw={700} c="dark">/ {totalCount}</Text>
+                            {successRate < 100 && (
+                              <Text size="xs" c="orange.6" fw={600}>~{Math.ceil(totalCount / (successRate / 100))} essais</Text>
+                            )}
                           </Group>
                           <Checkbox
                             size="xs"
@@ -291,6 +405,32 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                           </Group>
                           <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
                             <Group gap={4} wrap="nowrap" align="center">
+                              <Text size="xs" c="blue.5" fw={600}>♂</Text>
+                              <NumberInput
+                                value={getStepMaleCount(mount.id)}
+                                onChange={(v) => setStepMaleCount(mount.id, typeof v === 'number' ? v : 0)}
+                                min={0}
+                                max={999}
+                                size="xs"
+                                w={52}
+                                allowNegative={false}
+                                onFocus={(e) => e.target.select()}
+                              />
+                            </Group>
+                            <Group gap={4} wrap="nowrap" align="center">
+                              <Text size="xs" c="pink.5" fw={600}>♀</Text>
+                              <NumberInput
+                                value={getStepFemaleCount(mount.id)}
+                                onChange={(v) => setStepFemaleCount(mount.id, typeof v === 'number' ? v : 0)}
+                                min={0}
+                                max={999}
+                                size="xs"
+                                w={52}
+                                allowNegative={false}
+                                onFocus={(e) => e.target.select()}
+                              />
+                            </Group>
+                            <Group gap={4} wrap="nowrap" align="center">
                               <NumberInput
                                 value={getStepCount(mount.id)}
                                 onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
@@ -299,8 +439,12 @@ export function StrategyPanel({ allMounts, allowCloning, targetIds, achievementI
                                 size="xs"
                                 w={52}
                                 allowNegative={false}
+                                onFocus={(e) => e.target.select()}
                               />
                               <Text size="sm" fw={700} c="dark">/ {totalCount}</Text>
+                              {successRate < 100 && (
+                                <Text size="xs" c="orange.6" fw={600}>~{Math.ceil(totalCount / (successRate / 100))} essais</Text>
+                              )}
                             </Group>
                             <Checkbox
                               size="xs"
