@@ -129,7 +129,9 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
       if (data.user) {
         const entry = get().inventory[mountId];
         const effectiveDone = stepDone ? true : (entry?.done ?? false);
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, effectiveDone, { stepDone });
+        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, effectiveDone, {
+          stepDone, stepCount: entry?.stepCount, stepMaleCount: entry?.stepMaleCount, stepFemaleCount: entry?.stepFemaleCount,
+        });
       }
     });
   },
@@ -145,7 +147,9 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, { stepDone: entry?.stepDone, stepCount: clamped });
+        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, {
+          stepDone: entry?.stepDone, stepCount: clamped, stepMaleCount: entry?.stepMaleCount, stepFemaleCount: entry?.stepFemaleCount,
+        });
       }
     });
   },
@@ -161,7 +165,9 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, { stepMaleCount: clamped });
+        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, {
+          stepDone: entry?.stepDone, stepCount: entry?.stepCount, stepMaleCount: clamped, stepFemaleCount: entry?.stepFemaleCount,
+        });
       }
     });
   },
@@ -177,7 +183,9 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, { stepFemaleCount: clamped });
+        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, {
+          stepDone: entry?.stepDone, stepCount: entry?.stepCount, stepMaleCount: entry?.stepMaleCount, stepFemaleCount: clamped,
+        });
       }
     });
   },
