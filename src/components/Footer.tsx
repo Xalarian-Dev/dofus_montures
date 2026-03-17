@@ -1,5 +1,5 @@
 import { Box, Stack, Text, Anchor, Divider, SimpleGrid } from '@mantine/core';
-import { Mail } from 'lucide-react';
+import { Mail, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { HEADER_GRADIENT } from '@/lib/constants';
 
@@ -86,6 +86,17 @@ export function Footer() {
                 Xalarian
               </Anchor>
             </Text>
+            <Anchor
+              href="https://ko-fi.com/Xalarian"
+              target="_blank"
+              rel="noopener noreferrer"
+              size="sm"
+              c="orange.1"
+              style={{ textDecoration: 'none' }}
+            >
+              <Heart size={14} fill="currentColor" style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+              Soutenir sur Ko-fi
+            </Anchor>
           </Stack>
         </SimpleGrid>
       </Box>

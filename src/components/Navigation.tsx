@@ -1,7 +1,8 @@
 import { Box, Group, Title, Text, Anchor, Button, Modal, Stack, Divider, Avatar, Indicator, Burger, Drawer } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, LogOut } from 'lucide-react';
+import { LogIn, LogOut, Heart } from 'lucide-react';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useMessagesContext } from '@/contexts/MessagesContext';
 
@@ -111,6 +112,16 @@ export function Navigation() {
               Connexion
             </Button>
           )}
+          <Anchor
+            href="https://ko-fi.com/Xalarian"
+            target="_blank"
+            rel="noopener noreferrer"
+            td="none"
+            style={{ display: 'flex', alignItems: 'center' }}
+            title="Soutenir sur Ko-fi"
+          >
+            <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Ko-fi" width={25} height={20} style={{ opacity: 0.9 }} />
+          </Anchor>
           <Burger
             opened={drawerOpened}
             onClick={toggleDrawer}
@@ -132,6 +143,25 @@ export function Navigation() {
       >
         <Stack gap={4}>
           {links.map((link) => navLink(link, true))}
+          <Anchor
+            href="https://ko-fi.com/Xalarian"
+            target="_blank"
+            rel="noopener noreferrer"
+            td="none"
+            onClick={closeDrawer}
+            style={{
+              display: 'block',
+              padding: '10px 12px',
+              borderRadius: 8,
+              color: 'var(--mantine-color-pink-6)',
+              textDecoration: 'none',
+            }}
+          >
+            <Group gap={8} wrap="nowrap">
+              <Heart size={16} fill="currentColor" />
+              <Text size="md" fw={600} c="pink.6">Soutenir le projet</Text>
+            </Group>
+          </Anchor>
         </Stack>
         <Divider my="md" />
         {user ? (

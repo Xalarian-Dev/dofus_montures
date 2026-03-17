@@ -1,6 +1,6 @@
-import { Container, SimpleGrid, Card, Title, Text, Group, Stack, Image, Box, ThemeIcon, Divider, Badge, Paper } from '@mantine/core';
+import { Container, SimpleGrid, Card, Title, Text, Group, Stack, Image, Box, ThemeIcon, Divider, Badge, Paper, Anchor, Button } from '@mantine/core';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookCheck, Target, ArrowLeftRight, BookOpen, Calculator } from 'lucide-react';
+import { ArrowRight, BookCheck, Target, ArrowLeftRight, BookOpen, Calculator, Heart } from 'lucide-react';
 
 const categories = [
   {
@@ -169,6 +169,17 @@ export default function Home() {
             ))}
           </SimpleGrid>
         </Stack>
+
+        {/* Ko-fi support */}
+        <Anchor href="https://ko-fi.com/Xalarian" target="_blank" rel="noopener noreferrer" td="none">
+          <Paper withBorder p="md" radius="md" bg="pink.0" style={{ borderColor: 'var(--mantine-color-pink-2)' }}>
+            <Group justify="center" gap="sm">
+              <Heart size={16} fill="var(--mantine-color-pink-5)" color="var(--mantine-color-pink-5)" />
+              <Text size="sm" fw={600} c="pink.6">Soutenir le projet sur Ko-fi</Text>
+              <Text size="xs" c="dimmed">— 100% gratuit, un café aide à couvrir les frais</Text>
+            </Group>
+          </Paper>
+        </Anchor>
 
       </Stack>
     </Container>
