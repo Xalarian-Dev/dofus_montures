@@ -26,26 +26,55 @@ interface BreedingState {
   resetAll: (userId: string) => Promise<void>;
 }
 
-interface UpsertExtras {
-  stepDone?: boolean;
-  stepCount?: number;
-  stepMaleCount?: number;
-  stepFemaleCount?: number;
-}
-
-async function upsertToSupabase(userId: string, mountId: string, maleCount: number, femaleCount: number, done: boolean, extras?: UpsertExtras) {
+async function upsertToSupabase(userId: string, mountId: string, entry: BreedingInventory[string]) {
+  const e = entry ?? {};
   await supabase.from('breeding_inventory').upsert({
     user_id: userId,
     mount_id: mountId,
-    male_count: maleCount,
-    female_count: femaleCount,
-    done,
-    ...(extras?.stepDone !== undefined ? { step_done: extras.stepDone } : {}),
-    ...(extras?.stepCount !== undefined ? { step_count: extras.stepCount } : {}),
-    ...(extras?.stepMaleCount !== undefined ? { step_male_count: extras.stepMaleCount } : {}),
-    ...(extras?.stepFemaleCount !== undefined ? { step_female_count: extras.stepFemaleCount } : {}),
+    male_count: e.maleCount ?? 0,
+    female_count: e.femaleCount ?? 0,
+    done: e.done ?? false,
+    step_done: e.stepDone ?? false,
+    step_count: e.stepCount ?? 0,
+    step_male_count: e.stepMaleCount ?? 0,
+    step_female_count: e.stepFemaleCount ?? 0,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,mount_id' });
+}
+
+// Per-mount debounce: batches rapid changes into a single DB write.
+const DEBOUNCE_MS = 2000;
+const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const dirtyMounts = new Set<string>();
+
+function scheduleDebouncedUpsert(mountId: string) {
+  dirtyMounts.add(mountId);
+  const existing = pendingTimers.get(mountId);
+  if (existing) clearTimeout(existing);
+  pendingTimers.set(mountId, setTimeout(() => flushMount(mountId), DEBOUNCE_MS));
+}
+
+async function flushMount(mountId: string) {
+  pendingTimers.delete(mountId);
+  dirtyMounts.delete(mountId);
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return;
+  const entry = useBreedingStore.getState().inventory[mountId];
+  await upsertToSupabase(data.user.id, mountId, entry);
+}
+
+/** Flush all pending debounced writes immediately. */
+export function flushAllPending() {
+  for (const [mountId, timer] of pendingTimers) {
+    clearTimeout(timer);
+    pendingTimers.delete(mountId);
+    flushMount(mountId);
+  }
+}
+
+// Flush on page unload so no data is lost.
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushAllPending);
 }
 
 export const useBreedingStore = create<BreedingState>()((set, get) => ({
@@ -62,12 +91,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         [mountId]: { ...state.inventory[mountId], maleCount: clamped },
       },
     }));
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, clamped, entry?.femaleCount ?? 0, entry?.done ?? false);
-      }
-    });
+    scheduleDebouncedUpsert(mountId);
   },
 
   setFemaleCount: (mountId, count) => {
@@ -78,12 +102,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         [mountId]: { ...state.inventory[mountId], femaleCount: clamped },
       },
     }));
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, clamped, entry?.done ?? false);
-      }
-    });
+    scheduleDebouncedUpsert(mountId);
   },
 
   setWanted: (mountId, gender, wanted) => {
@@ -105,12 +124,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         [mountId]: { ...state.inventory[mountId], done },
       },
     }));
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, done);
-      }
-    });
+    scheduleDebouncedUpsert(mountId);
   },
 
   setStepDone: (mountId, stepDone) => {
@@ -125,15 +139,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         },
       },
     }));
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        const entry = get().inventory[mountId];
-        const effectiveDone = stepDone ? true : (entry?.done ?? false);
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, effectiveDone, {
-          stepDone, stepCount: entry?.stepCount, stepMaleCount: entry?.stepMaleCount, stepFemaleCount: entry?.stepFemaleCount,
-        });
-      }
-    });
+    scheduleDebouncedUpsert(mountId);
   },
 
   setStepCount: (mountId, stepCount) => {
@@ -144,14 +150,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         [mountId]: { ...state.inventory[mountId], stepCount: clamped },
       },
     }));
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, {
-          stepDone: entry?.stepDone, stepCount: clamped, stepMaleCount: entry?.stepMaleCount, stepFemaleCount: entry?.stepFemaleCount,
-        });
-      }
-    });
+    scheduleDebouncedUpsert(mountId);
   },
 
   setStepMaleCount: (mountId, count) => {
@@ -162,14 +161,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         [mountId]: { ...state.inventory[mountId], stepMaleCount: clamped },
       },
     }));
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, {
-          stepDone: entry?.stepDone, stepCount: entry?.stepCount, stepMaleCount: clamped, stepFemaleCount: entry?.stepFemaleCount,
-        });
-      }
-    });
+    scheduleDebouncedUpsert(mountId);
   },
 
   setStepFemaleCount: (mountId, count) => {
@@ -180,14 +172,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
         [mountId]: { ...state.inventory[mountId], stepFemaleCount: clamped },
       },
     }));
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        const entry = get().inventory[mountId];
-        upsertToSupabase(data.user.id, mountId, entry?.maleCount ?? 0, entry?.femaleCount ?? 0, entry?.done ?? false, {
-          stepDone: entry?.stepDone, stepCount: entry?.stepCount, stepMaleCount: entry?.stepMaleCount, stepFemaleCount: clamped,
-        });
-      }
-    });
+    scheduleDebouncedUpsert(mountId);
   },
 
   removeObjective: async (category) => {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { ComponentType, lazy, Suspense, useEffect } from 'react';
 import { AppShell, Box } from '@mantine/core';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
@@ -12,19 +12,30 @@ import { CookieBanner } from './components/CookieBanner';
 import { Footer } from './components/Footer';
 import { MessagesProvider } from './contexts/MessagesContext';
 
-const Home = lazy(() => import('./pages/Home'));
-const Dragodindes = lazy(() => import('./pages/Dragodindes'));
-const Muldos = lazy(() => import('./pages/Muldos'));
-const Volkornes = lazy(() => import('./pages/Volkornes'));
-const Caracteristiques = lazy(() => import('./pages/Caracteristiques'));
-const Guide = lazy(() => import('./pages/Guide'));
-const AuthCallback = lazy(() => import('./pages/AuthCallback'));
-const Echange = lazy(() => import('./pages/Echange'));
-const PolitiqueConfidentialite = lazy(() => import('./pages/PolitiqueConfidentialite'));
-const MentionsLegales = lazy(() => import('./pages/MentionsLegales'));
-const Profile = lazy(() => import('./pages/Profile'));
-const Calculateur = lazy(() => import('./pages/Calculateur'));
-const PublicProfile = lazy(() => import('./pages/PublicProfile'));
+// After a new deploy, old JS chunks no longer exist on the server.
+// Catch the import error and force a full page reload to get fresh assets.
+function lazyWithRetry(factory: () => Promise<{ default: ComponentType<unknown> }>) {
+  return lazy(() =>
+    factory().catch(() => {
+      window.location.reload();
+      return new Promise(() => {}); // never resolves — reload will take over
+    })
+  );
+}
+
+const Home = lazyWithRetry(() => import('./pages/Home'));
+const Dragodindes = lazyWithRetry(() => import('./pages/Dragodindes'));
+const Muldos = lazyWithRetry(() => import('./pages/Muldos'));
+const Volkornes = lazyWithRetry(() => import('./pages/Volkornes'));
+const Caracteristiques = lazyWithRetry(() => import('./pages/Caracteristiques'));
+const Guide = lazyWithRetry(() => import('./pages/Guide'));
+const AuthCallback = lazyWithRetry(() => import('./pages/AuthCallback'));
+const Echange = lazyWithRetry(() => import('./pages/Echange'));
+const PolitiqueConfidentialite = lazyWithRetry(() => import('./pages/PolitiqueConfidentialite'));
+const MentionsLegales = lazyWithRetry(() => import('./pages/MentionsLegales'));
+const Profile = lazyWithRetry(() => import('./pages/Profile'));
+const Calculateur = lazyWithRetry(() => import('./pages/Calculateur'));
+const PublicProfile = lazyWithRetry(() => import('./pages/PublicProfile'));
 
 export default function App() {
   const { loading: authLoading } = useAuth();

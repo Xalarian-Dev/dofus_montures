@@ -1,6 +1,6 @@
 import { Stack, Paper, Text, Group, Badge, SimpleGrid, Image, Divider, ThemeIcon, Checkbox, Switch, SegmentedControl, NumberInput, Slider } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
-import { useMemo } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import { Sword, ArrowRight, Egg, Heart } from 'lucide-react';
 import { buildStrategy, buildSuccesStrategy } from '@/lib/breedingStrategy';
 import type { BreedingBreed, StrategyMode } from '@/lib/breedingStrategy';
@@ -45,39 +45,115 @@ function groupBreedsByMount(breeds: BreedingBreed[]) {
   return [...map.values()];
 }
 
-export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyPanelProps) {
-  const inventory = useBreedingStore((s) => s.inventory);
-  const allowCloningByCategory = useBreedingStore((s) => s.allowCloningByCategory);
-  const setAllowCloning = useBreedingStore((s) => s.setAllowCloning);
-  const category = allMounts[0]?.category;
-  const allowCloning = (category ? allowCloningByCategory[category] : undefined) ?? false;
+/** Isolated counters per mount — only re-renders when its own data changes. */
+const StepCounters = memo(function StepCounters({ mountId, maxCount, label, successRate }: {
+  mountId: string;
+  maxCount: number;
+  label: string;
+  successRate: number;
+}) {
+  const entry = useBreedingStore((s) => s.inventory[mountId]);
   const setStepDone = useBreedingStore((s) => s.setStepDone);
   const setStepCount = useBreedingStore((s) => s.setStepCount);
   const setStepMaleCount = useBreedingStore((s) => s.setStepMaleCount);
   const setStepFemaleCount = useBreedingStore((s) => s.setStepFemaleCount);
+
+  const done = entry?.stepDone ?? false;
+  const stepCount = entry?.stepCount ?? 0;
+  const maleCount = entry?.stepMaleCount ?? 0;
+  const femaleCount = entry?.stepFemaleCount ?? 0;
+
+  return (
+    <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+      <Group gap={4} wrap="nowrap" align="center">
+        <Text size="xs" c="blue.5" fw={600}>♂</Text>
+        <NumberInput
+          value={maleCount}
+          onChange={(v) => setStepMaleCount(mountId, typeof v === 'number' ? v : 0)}
+          min={0}
+          max={999}
+          size="xs"
+          w={52}
+          allowNegative={false}
+          onFocus={(e) => e.target.select()}
+        />
+      </Group>
+      <Group gap={4} wrap="nowrap" align="center">
+        <Text size="xs" c="pink.5" fw={600}>♀</Text>
+        <NumberInput
+          value={femaleCount}
+          onChange={(v) => setStepFemaleCount(mountId, typeof v === 'number' ? v : 0)}
+          min={0}
+          max={999}
+          size="xs"
+          w={52}
+          allowNegative={false}
+          onFocus={(e) => e.target.select()}
+        />
+      </Group>
+      <Group gap={4} wrap="nowrap" align="center">
+        <NumberInput
+          value={stepCount}
+          onChange={(v) => setStepCount(mountId, typeof v === 'number' ? v : 0)}
+          min={0}
+          max={maxCount}
+          size="xs"
+          w={52}
+          allowNegative={false}
+          onFocus={(e) => e.target.select()}
+        />
+        <Text size="sm" fw={700} c="dark">/ {maxCount}</Text>
+        {successRate < 100 && (
+          <Text size="xs" c="orange.6" fw={600}>~{Math.ceil(maxCount / (successRate / 100))} essais</Text>
+        )}
+      </Group>
+      <Checkbox
+        size="xs"
+        color="green"
+        checked={done}
+        onChange={(e) => setStepDone(mountId, e.currentTarget.checked)}
+        label={done ? 'Fait' : label}
+        style={{ flexShrink: 0 }}
+      />
+    </Group>
+  );
+});
+
+export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyPanelProps) {
+  // Only subscribe to done/stepDone flags — counter changes won't trigger a re-render here.
+  // We use a ref to cache the previous result and a custom equality function so React
+  // doesn't see a new object reference on every store update.
+  const statusFlagsRef = useRef<Record<string, { done?: boolean; stepDone?: boolean }>>({});
+  const statusFlags = useBreedingStore((s) => {
+    const flags: Record<string, { done?: boolean; stepDone?: boolean }> = {};
+    for (const [id, entry] of Object.entries(s.inventory)) {
+      if (entry?.done || entry?.stepDone) flags[id] = { done: entry.done, stepDone: entry.stepDone };
+    }
+    // Shallow-compare: same keys with same done/stepDone values → return cached ref.
+    const prev = statusFlagsRef.current;
+    const prevKeys = Object.keys(prev);
+    const nextKeys = Object.keys(flags);
+    if (prevKeys.length === nextKeys.length && nextKeys.every(
+      (k) => prev[k]?.done === flags[k]?.done && prev[k]?.stepDone === flags[k]?.stepDone,
+    )) {
+      return prev;
+    }
+    statusFlagsRef.current = flags;
+    return flags;
+  });
+
+  const allowCloningByCategory = useBreedingStore((s) => s.allowCloningByCategory);
+  const setAllowCloning = useBreedingStore((s) => s.setAllowCloning);
+  const category = allMounts[0]?.category;
+  const allowCloning = (category ? allowCloningByCategory[category] : undefined) ?? false;
   const [hideDone, setHideDone] = useLocalStorage({ key: 'strategy-hide-done', defaultValue: false });
 
-  function isStepDone(mountId: string) {
-    return inventory[mountId]?.stepDone ?? false;
-  }
-
-  function getStepCount(mountId: string) {
-    return inventory[mountId]?.stepCount ?? 0;
-  }
-
-  function getStepMaleCount(mountId: string) {
-    return inventory[mountId]?.stepMaleCount ?? 0;
-  }
-
-  function getStepFemaleCount(mountId: string) {
-    return inventory[mountId]?.stepFemaleCount ?? 0;
-  }
   const [mode, setMode] = useLocalStorage<StrategyMode>({ key: 'strategy-mode', defaultValue: 'simple' });
   const [successRate, setSuccessRate] = useLocalStorage<number>({ key: 'strategy-success-rate', defaultValue: 100 });
 
   const ownedIds = useMemo(
-    () => new Set(Object.entries(inventory).filter(([, v]) => v?.done).map(([k]) => k)),
-    [inventory],
+    () => new Set(Object.entries(statusFlags).filter(([, v]) => v?.done).map(([k]) => k)),
+    [statusFlags],
   );
 
   const strategy = useMemo(() => {
@@ -86,7 +162,7 @@ export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyP
   }, [achievementId, targetIds, allMounts, allowCloning, mode, ownedIds]);
 
   const { targets, captures, totalCaptures, steps, totalBreeds } = strategy;
-  const remaining = targets.filter((m) => !inventory[m.id]?.done).length;
+  const remaining = targets.filter((m) => !statusFlags[m.id]?.done).length;
 
   return (
     <Stack gap="lg">
@@ -105,7 +181,7 @@ export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyP
         {targets.length > 1 && (
           <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="xs" mb="xs">
             {targets.map((m) => {
-              const done = inventory[m.id]?.done ?? false;
+              const done = statusFlags[m.id]?.done ?? false;
               return (
                 <Group key={m.id} gap={6} wrap="nowrap" opacity={done ? 0.5 : 1}>
                   <MountChip mount={m} />
@@ -205,8 +281,8 @@ export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyP
             </Badge>
           </Group>
           <Stack gap="xs">
-            {captures.filter(({ mount }) => !hideDone || !isStepDone(mount.id)).map(({ mount, count }) => {
-              const done = isStepDone(mount.id);
+            {captures.filter(({ mount }) => !hideDone || !(statusFlags[mount.id]?.stepDone)).map(({ mount, count }) => {
+              const done = statusFlags[mount.id]?.stepDone ?? false;
               return (
                 <Paper
                   key={mount.id}
@@ -220,54 +296,7 @@ export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyP
                     <Group gap="sm" wrap="nowrap">
                       <MountChip mount={mount} />
                     </Group>
-                    <Group gap="xs" wrap="nowrap">
-                      <Group gap={4} wrap="nowrap" align="center">
-                        <Text size="xs" c="blue.5" fw={600}>♂</Text>
-                        <NumberInput
-                          value={getStepMaleCount(mount.id)}
-                          onChange={(v) => setStepMaleCount(mount.id, typeof v === 'number' ? v : 0)}
-                          min={0}
-                          max={999}
-                          size="xs"
-                          w={52}
-                          allowNegative={false}
-                          onFocus={(e) => e.target.select()}
-                        />
-                      </Group>
-                      <Group gap={4} wrap="nowrap" align="center">
-                        <Text size="xs" c="pink.5" fw={600}>♀</Text>
-                        <NumberInput
-                          value={getStepFemaleCount(mount.id)}
-                          onChange={(v) => setStepFemaleCount(mount.id, typeof v === 'number' ? v : 0)}
-                          min={0}
-                          max={999}
-                          size="xs"
-                          w={52}
-                          allowNegative={false}
-                          onFocus={(e) => e.target.select()}
-                        />
-                      </Group>
-                      <Group gap={4} wrap="nowrap" align="center">
-                        <NumberInput
-                          value={getStepCount(mount.id)}
-                          onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
-                          min={0}
-                          max={count}
-                          size="xs"
-                          w={52}
-                          allowNegative={false}
-                          onFocus={(e) => e.target.select()}
-                        />
-                        <Text size="sm" fw={700} c="dark">/ {count}</Text>
-                      </Group>
-                      <Checkbox
-                        size="xs"
-                        color="green"
-                        checked={done}
-                        onChange={(e) => setStepDone(mount.id, e.currentTarget.checked)}
-                        label={done ? 'Fait' : 'À capturer'}
-                      />
-                    </Group>
+                    <StepCounters mountId={mount.id} maxCount={count} label="À capturer" successRate={successRate} />
                   </Group>
                 </Paper>
               );
@@ -297,10 +326,10 @@ export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyP
           </Group>
           <Stack gap="xs">
             {groupBreedsByMount(step.breeds)
-              .filter((group) => !hideDone || !isStepDone(group[0].mount.id))
+              .filter((group) => !hideDone || !(statusFlags[group[0].mount.id]?.stepDone))
               .map((group) => {
                 const { mount } = group[0];
-                const done = isStepDone(mount.id);
+                const done = statusFlags[mount.id]?.stepDone ?? false;
                 const totalCount = group.reduce((s, b) => s + b.count, 0);
 
                 return (
@@ -335,58 +364,7 @@ export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyP
                             </Badge>
                           )}
                         </Group>
-                        <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-                          <Group gap={4} wrap="nowrap" align="center">
-                            <Text size="xs" c="blue.5" fw={600}>♂</Text>
-                            <NumberInput
-                              value={getStepMaleCount(mount.id)}
-                              onChange={(v) => setStepMaleCount(mount.id, typeof v === 'number' ? v : 0)}
-                              min={0}
-                              max={999}
-                              size="xs"
-                              w={52}
-                              allowNegative={false}
-                              onFocus={(e) => e.target.select()}
-                            />
-                          </Group>
-                          <Group gap={4} wrap="nowrap" align="center">
-                            <Text size="xs" c="pink.5" fw={600}>♀</Text>
-                            <NumberInput
-                              value={getStepFemaleCount(mount.id)}
-                              onChange={(v) => setStepFemaleCount(mount.id, typeof v === 'number' ? v : 0)}
-                              min={0}
-                              max={999}
-                              size="xs"
-                              w={52}
-                              allowNegative={false}
-                              onFocus={(e) => e.target.select()}
-                            />
-                          </Group>
-                          <Group gap={4} wrap="nowrap" align="center">
-                            <NumberInput
-                              value={getStepCount(mount.id)}
-                              onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
-                              min={0}
-                              max={totalCount}
-                              size="xs"
-                              w={52}
-                              allowNegative={false}
-                              onFocus={(e) => e.target.select()}
-                            />
-                            <Text size="sm" fw={700} c="dark">/ {totalCount}</Text>
-                            {successRate < 100 && (
-                              <Text size="xs" c="orange.6" fw={600}>~{Math.ceil(totalCount / (successRate / 100))} essais</Text>
-                            )}
-                          </Group>
-                          <Checkbox
-                            size="xs"
-                            color="green"
-                            checked={done}
-                            onChange={(e) => setStepDone(mount.id, e.currentTarget.checked)}
-                            label={done ? 'Fait' : 'À élever'}
-                            style={{ flexShrink: 0 }}
-                          />
-                        </Group>
+                        <StepCounters mountId={mount.id} maxCount={totalCount} label="À élever" successRate={successRate} />
                       </Group>
                     ) : (
                       /* Optimisé: mount header + one sub-row per pair */
@@ -403,58 +381,7 @@ export function StrategyPanel({ allMounts, targetIds, achievementId }: StrategyP
                               </Stack>
                             </Group>
                           </Group>
-                          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-                            <Group gap={4} wrap="nowrap" align="center">
-                              <Text size="xs" c="blue.5" fw={600}>♂</Text>
-                              <NumberInput
-                                value={getStepMaleCount(mount.id)}
-                                onChange={(v) => setStepMaleCount(mount.id, typeof v === 'number' ? v : 0)}
-                                min={0}
-                                max={999}
-                                size="xs"
-                                w={52}
-                                allowNegative={false}
-                                onFocus={(e) => e.target.select()}
-                              />
-                            </Group>
-                            <Group gap={4} wrap="nowrap" align="center">
-                              <Text size="xs" c="pink.5" fw={600}>♀</Text>
-                              <NumberInput
-                                value={getStepFemaleCount(mount.id)}
-                                onChange={(v) => setStepFemaleCount(mount.id, typeof v === 'number' ? v : 0)}
-                                min={0}
-                                max={999}
-                                size="xs"
-                                w={52}
-                                allowNegative={false}
-                                onFocus={(e) => e.target.select()}
-                              />
-                            </Group>
-                            <Group gap={4} wrap="nowrap" align="center">
-                              <NumberInput
-                                value={getStepCount(mount.id)}
-                                onChange={(v) => setStepCount(mount.id, typeof v === 'number' ? v : 0)}
-                                min={0}
-                                max={totalCount}
-                                size="xs"
-                                w={52}
-                                allowNegative={false}
-                                onFocus={(e) => e.target.select()}
-                              />
-                              <Text size="sm" fw={700} c="dark">/ {totalCount}</Text>
-                              {successRate < 100 && (
-                                <Text size="xs" c="orange.6" fw={600}>~{Math.ceil(totalCount / (successRate / 100))} essais</Text>
-                              )}
-                            </Group>
-                            <Checkbox
-                              size="xs"
-                              color="green"
-                              checked={done}
-                              onChange={(e) => setStepDone(mount.id, e.currentTarget.checked)}
-                              label={done ? 'Fait' : 'À élever'}
-                              style={{ flexShrink: 0 }}
-                            />
-                          </Group>
+                          <StepCounters mountId={mount.id} maxCount={totalCount} label="À élever" successRate={successRate} />
                         </Group>
                         <Stack
                           gap={4}
