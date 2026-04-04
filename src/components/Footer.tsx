@@ -8,6 +8,13 @@ const EMAIL = ['xalarian.dev', 'gmail.com'].join('@');
 
 const changelog = [
   {
+    version: '0.5',
+    date: '4 avril 2026',
+    changes: [
+      'Stratégie Optimisée améliorée — pour les Muldos et Volkornes (recettes multiples), le mode choisit maintenant les combinaisons qui partagent le plus de parents avec vos autres objectifs, réduisant le nombre de reproductions inutiles',
+    ],
+  },
+  {
     version: '0.4',
     date: '19 mars 2026',
     changes: [

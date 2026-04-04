@@ -98,6 +98,8 @@ export function buildStrategy(
   // Complex: use the full universe (all pairs will be used, production distributed).
   let allNeeded: Set<string>;
   const chosenPairs = new Map<string, [string, string]>();
+  // Complex mode: stores actual pair allocations {pairIdx, count} per mount.
+  const complexAllocations = new Map<string, { pairIdx: number; count: number }[]>();
 
   if (mode === 'complex') {
     allNeeded = new Set(universe);
@@ -151,15 +153,32 @@ export function buildStrategy(
     if (!mount || mount.generation <= 1 || !mount.parents?.length) continue;
 
     if (mode === 'complex' && mount.parents.length > 1) {
-      // Distribute production evenly across all parent pairs.
       const N = mount.parents.length;
-      const base = Math.floor(breedProd / N);
-      const extra = breedProd % N;
-      for (let i = 0; i < N; i++) {
-        const contribution = base + (i < extra ? 1 : 0);
-        const [a, b] = mount.parents[i];
-        parentDemand.set(a, (parentDemand.get(a) ?? 0) + contribution);
-        parentDemand.set(b, (parentDemand.get(b) ?? 0) + contribution);
+      const allocs: { pairIdx: number; count: number }[] = [];
+
+      if (breedProd >= N) {
+        // Enough copies: distribute evenly across all parent pairs.
+        const base = Math.floor(breedProd / N);
+        const extra = breedProd % N;
+        for (let i = 0; i < N; i++) {
+          const count = base + (i < extra ? 1 : 0);
+          if (count > 0) allocs.push({ pairIdx: i, count });
+        }
+      } else if (breedProd > 0) {
+        // Fewer copies than recipes: rank pairs by reuse score, pick the top breedProd.
+        const ranked = mount.parents
+          .map((pair, i) => ({ i, score: countSharedAncestors(pair, allNeeded, mountMap) }))
+          .sort((a, b) => b.score - a.score);
+        for (let k = 0; k < breedProd; k++) {
+          allocs.push({ pairIdx: ranked[k].i, count: 1 });
+        }
+      }
+
+      complexAllocations.set(id, allocs);
+      for (const { pairIdx, count } of allocs) {
+        const [a, b] = mount.parents[pairIdx];
+        parentDemand.set(a, (parentDemand.get(a) ?? 0) + count);
+        parentDemand.set(b, (parentDemand.get(b) ?? 0) + count);
       }
     } else {
       const [a, b] = chosenPairs.get(id) ?? mount.parents[0];
@@ -187,18 +206,15 @@ export function buildStrategy(
     if (!byGen.has(mount.generation)) byGen.set(mount.generation, []);
 
     if (mode === 'complex' && mount.parents.length > 1) {
-      // Emit one BreedingBreed per pair with its distributed count.
-      const N = mount.parents.length;
-      const base = Math.floor(prod / N);
-      const extra = prod % N;
-      for (let i = 0; i < N; i++) {
-        const pairCount = base + (i < extra ? 1 : 0);
-        if (pairCount <= 0) continue;
-        const [aId, bId] = mount.parents[i];
+      // Emit one BreedingBreed per allocated pair (mirrors the DP allocation exactly).
+      const allocs = complexAllocations.get(mountId) ?? [];
+      for (const { pairIdx, count } of allocs) {
+        if (count <= 0) continue;
+        const [aId, bId] = mount.parents[pairIdx];
         const parentA = mountMap.get(aId);
         const parentB = mountMap.get(bId);
         if (!parentA || !parentB) continue;
-        byGen.get(mount.generation)!.push({ mount, parents: [parentA, parentB], count: pairCount, alternativePairsCount: 0 });
+        byGen.get(mount.generation)!.push({ mount, parents: [parentA, parentB], count, alternativePairsCount: 0 });
       }
     } else {
       const [aId, bId] = chosenPairs.get(mountId) ?? mount.parents[0];
