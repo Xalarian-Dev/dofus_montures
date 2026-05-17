@@ -1,6 +1,6 @@
 import { ComponentType, lazy, Suspense, useEffect } from 'react';
 import { AppShell, Box } from '@mantine/core';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { BackToTop } from './components/BackToTop';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -37,6 +37,15 @@ const Profile = lazyWithRetry(() => import('./pages/Profile'));
 const Calculateur = lazyWithRetry(() => import('./pages/Calculateur'));
 const PublicProfile = lazyWithRetry(() => import('./pages/PublicProfile'));
 
+function CanonicalUpdater() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', `https://dofus-montures.vercel.app${pathname}`);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   const { loading: authLoading } = useAuth();
   const loadFromSupabase = useBreedingStore((s) => s.loadFromSupabase);
@@ -65,6 +74,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <CanonicalUpdater />
       <MessagesProvider>
       <AppShell header={{ height: 60 }} bg="orange.1">
         <AppShell.Header
