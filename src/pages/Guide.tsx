@@ -189,7 +189,7 @@ function BreedingSimulator() {
   const [optimakina, setOptimakina] = useState(false);
 
   const bonusLevels = (level1 + level2) * 0.15;
-  const bonusOptimakina = optimakina ? 10 : 0;
+  const bonusOptimakina = optimakina ? 20 : 0;
   const prob = Math.min(100, 30 + bonusLevels + bonusOptimakina);
   const isMax = prob >= 100;
 
@@ -218,7 +218,7 @@ function BreedingSimulator() {
       </SimpleGrid>
       <Checkbox
         mt="sm"
-        label="Optimakina (+10 %)"
+        label="Optimakina (+20 %)"
         checked={optimakina}
         onChange={(e) => setOptimakina(e.currentTarget.checked)}
       />
@@ -233,7 +233,7 @@ function BreedingSimulator() {
             {optimakina && (
               <>
                 <Text size="xs" c="dimmed">+ Optimakina</Text>
-                <Text size="xs" fw={600} c="yellow.7">+10 %</Text>
+                <Text size="xs" fw={600} c="yellow.7">+20 %</Text>
               </>
             )}
           </Group>
@@ -406,7 +406,7 @@ export default function Guide() {
 
             <Stack gap={4}>
               <Text size="sm" fw={600} c="dark">Consommation par palier</Text>
-              <Text size="xs" c="dimmed">Une jauge pleine contient 100 000 unités. La vitesse de transfert dépend du niveau de remplissage. Une jauge pleine met <Text component="span" fw={600}>17h48</Text> pour se vider totalement.</Text>
+              <Text size="xs" c="dimmed">Une jauge pleine contient 200 000 unités. La vitesse de transfert dépend du niveau de remplissage. Une jauge pleine met <Text component="span" fw={600}>35h38</Text> pour se vider totalement.</Text>
               <Table withTableBorder withColumnBorders fz="sm" mt={4}>
                 <Table.Thead>
                   <Table.Tr>
@@ -418,10 +418,10 @@ export default function Guide() {
                 </Table.Thead>
                 <Table.Tbody>
                   {([
-                    { tier: 'Tier 1', range: '0 à 40 000', rate: '10 unités', time: '~11h 06min' },
-                    { tier: 'Tier 2', range: '40 001 à 70 000', rate: '20 unités', time: '~04h 09min' },
-                    { tier: 'Tier 3', range: '70 001 à 90 000', rate: '30 unités', time: '~01h 51min' },
-                    { tier: 'Tier 4', range: '90 001 à 100 000', rate: '40 unités', time: '~42min' },
+                    { tier: 'Tier 1', range: '0 à 80 000', rate: '10 unités', time: '~22h 13min' },
+                    { tier: 'Tier 2', range: '80 001 à 140 000', rate: '20 unités', time: '~08h 20min' },
+                    { tier: 'Tier 3', range: '140 001 à 180 000', rate: '30 unités', time: '~03h 42min' },
+                    { tier: 'Tier 4', range: '180 001 à 200 000', rate: '40 unités', time: '~01h 23min' },
                   ] as const).map((row) => (
                     <Table.Tr key={row.tier}>
                       <Table.Td fw={600}>{row.tier}</Table.Td>
@@ -535,7 +535,7 @@ export default function Guide() {
               <Text size="sm" fw={600} c="dark">Avant de valider</Text>
               <Stack gap={6}>
                 {([
-                  { label: 'Makina', desc: 'Insérez un consommable (Makina) entre les parents pour influencer les capacités ou les probabilités du bébé.' },
+                  { label: 'Makina', desc: 'Insérez un consommable (Makina) entre les parents pour influencer les capacités ou les probabilités du bébé. Sans Makina, le bébé a tout de même une probabilité d\'obtenir une capacité aléatoire.' },
                   { label: 'Probabilités', desc: 'Observez les chances d\'obtenir tel ou tel type de monture.' },
                   { label: 'Gain', desc: 'Vous pouvez directement voir l\'expérience de métier et les génétons que l\'action vous rapportera.' },
                 ] as const).map((item) => (
@@ -597,7 +597,7 @@ export default function Guide() {
 
             <Paper withBorder p="sm" radius="md" bg="yellow.0" style={{ borderColor: 'var(--mantine-color-yellow-4)' }}>
               <Text size="sm" c="dark">
-                <Text component="span" fw={600}>Optimakina :</Text> Ce consommable (fabriqué par les Éleveurs) ajoute <Text component="span" fw={600}>+10 %</Text>. Avec deux parents niveau 200, cela donne <Text component="span" fw={600}>100 % de réussite</Text> — la seule méthode pour éliminer totalement l'aléa.
+                <Text component="span" fw={600}>Optimakina :</Text> Ce consommable (fabriqué par les Éleveurs) ajoute <Text component="span" fw={600}>+20 %</Text>. Dès que le cumul des niveaux des parents atteint 334 (par exemple deux parents niveau 167), cela donne <Text component="span" fw={600}>100 % de réussite</Text> — la seule méthode pour éliminer totalement l'aléa.
               </Text>
             </Paper>
 
@@ -637,9 +637,9 @@ export default function Guide() {
                 <Table.Tbody>
                   {([
                     { kept: 'Généalogie (arbre généalogique identique)', reset: 'Statistiques (Amour, Maturité, Endurance à 0)' },
-                    { kept: 'Genre (Mâle ou Femelle)', reset: 'Sérénité (remise à une valeur aléatoire)' },
-                    { kept: 'Type / Espèce', reset: 'Capacités spéciales (disparaissent au clonage)' },
-                    { kept: '—', reset: 'Expérience (remise à zéro — niveau 1)' },
+                    { kept: 'Genre (Mâle ou Femelle)', reset: 'Capacités spéciales (disparaissent au clonage)' },
+                    { kept: 'Type / Espèce', reset: 'Expérience (remise à zéro — niveau 1)' },
+                    { kept: 'Sérénité (identique à celle de la monture modèle)', reset: '—' },
                   ] as const).map((row, i) => (
                     <Table.Tr key={i}>
                       <Table.Td>{row.kept}</Table.Td>

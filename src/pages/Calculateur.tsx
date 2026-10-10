@@ -8,15 +8,17 @@ import { xpToReachLevel, MOUNT_XP_CUMULATIVE } from '@/data/mountXp';
 
 // ─── Tier-based gauge drain calculation ──────────────────────────────────────
 
+const GAUGE_MAX = 200000;
+
 const TIERS = [
-  { floor: 90000, rate: 40 }, // Tier 4: 90 001 – 100 000
-  { floor: 70000, rate: 30 }, // Tier 3: 70 001 – 90 000
-  { floor: 40000, rate: 20 }, // Tier 2: 40 001 – 70 000
-  { floor: 0,     rate: 10 }, // Tier 1: 0 – 40 000
+  { floor: 180000, rate: 40 }, // Tier 4: 180 001 – 200 000
+  { floor: 140000, rate: 30 }, // Tier 3: 140 001 – 180 000
+  { floor: 80000,  rate: 20 }, // Tier 2: 80 001 – 140 000
+  { floor: 0,      rate: 10 }, // Tier 1: 0 – 80 000
 ];
 
 function calcDrainSeconds(startFill: number, toDrain: number): { seconds: number; depleted: boolean; actualDrained: number } {
-  let fill = Math.max(0, Math.min(startFill, 100000));
+  let fill = Math.max(0, Math.min(startFill, GAUGE_MAX));
   let remaining = toDrain;
   let totalSeconds = 0;
 
@@ -137,7 +139,7 @@ interface XpCalcResult {
 function SimpleCalc() {
   const [mode, setMode] = useState<CalcMode>('endurance');
   const [current, setCurrent] = useState(0);
-  const [gaugeFill, setGaugeFill] = useState(100000);
+  const [gaugeFill, setGaugeFill] = useState(GAUGE_MAX);
   const [sereniteTarget, setSereniteTarget] = useState(-1000);
   const [result, setResult] = useState<SimpleCalcResult | null>(null);
 
@@ -299,7 +301,7 @@ function SimpleCalc() {
           color="gray"
           value={gaugeFill}
           onChange={(v) => { setGaugeFill(v); setResult(null); setXpResult(null); }}
-          max={100000}
+          max={GAUGE_MAX}
           step={1000}
           extra={
             isXp ? (
@@ -692,10 +694,10 @@ function FullPlanner() {
   const [maturite, setMaturite] = useState(0);
   const [amour, setAmour] = useState(0);
   const [startSer, setStartSer] = useState(0);
-  const [gaugeEnd, setGaugeEnd] = useState(100000);
-  const [gaugeMat, setGaugeMat] = useState(100000);
-  const [gaugeAmour, setGaugeAmour] = useState(100000);
-  const [gaugeSer, setGaugeSer] = useState(100000);
+  const [gaugeEnd, setGaugeEnd] = useState(GAUGE_MAX);
+  const [gaugeMat, setGaugeMat] = useState(GAUGE_MAX);
+  const [gaugeAmour, setGaugeAmour] = useState(GAUGE_MAX);
+  const [gaugeSer, setGaugeSer] = useState(GAUGE_MAX);
   const [result, setResult] = useState<FullPlannerResult | null>(null);
 
   function handleCalculate() {
@@ -742,7 +744,7 @@ function FullPlanner() {
           color="yellow"
           value={gaugeEnd}
           onChange={(v) => { setGaugeEnd(v); clearResult(); }}
-          max={100000}
+          max={GAUGE_MAX}
           step={1000}
           extra={<Badge color="yellow" variant="filled" size="sm">Endurance</Badge>}
         />
@@ -751,7 +753,7 @@ function FullPlanner() {
           color="blue"
           value={gaugeMat}
           onChange={(v) => { setGaugeMat(v); clearResult(); }}
-          max={100000}
+          max={GAUGE_MAX}
           step={1000}
           extra={<Badge color="blue" variant="filled" size="sm">Maturité</Badge>}
         />
@@ -760,7 +762,7 @@ function FullPlanner() {
           color="red"
           value={gaugeAmour}
           onChange={(v) => { setGaugeAmour(v); clearResult(); }}
-          max={100000}
+          max={GAUGE_MAX}
           step={1000}
           extra={<Badge color="red" variant="filled" size="sm">Amour</Badge>}
         />
@@ -769,7 +771,7 @@ function FullPlanner() {
           color="grape"
           value={gaugeSer}
           onChange={(v) => { setGaugeSer(v); clearResult(); }}
-          max={100000}
+          max={GAUGE_MAX}
           step={1000}
           extra={<Badge color="grape" variant="filled" size="sm">Sérénité</Badge>}
         />
