@@ -24,6 +24,8 @@ interface BreedingState {
   removeObjective: (category: MountCategory) => Promise<void>;
   loadFromSupabase: (userId: string) => Promise<void>;
   resetAll: (userId: string) => Promise<void>;
+  /** Vide toutes les données affichées (utilisé à la déconnexion). */
+  clear: () => void;
 }
 
 async function upsertToSupabase(userId: string, mountId: string, entry: BreedingInventory[string]) {
@@ -64,12 +66,14 @@ async function flushMount(mountId: string) {
 }
 
 /** Flush all pending debounced writes immediately. */
-export function flushAllPending() {
+export function flushAllPending(): Promise<void> {
+  const writes: Promise<void>[] = [];
   for (const [mountId, timer] of pendingTimers) {
     clearTimeout(timer);
     pendingTimers.delete(mountId);
-    flushMount(mountId);
+    writes.push(flushMount(mountId));
   }
+  return Promise.all(writes).then(() => undefined);
 }
 
 // Flush on page unload so no data is lost.
@@ -260,4 +264,6 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     ]);
     set({ inventory: {}, objectives: {} });
   },
+
+  clear: () => set({ inventory: {}, objectives: {}, allowCloningByCategory: {}, wantedMounts: {} }),
 }));
