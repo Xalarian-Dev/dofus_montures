@@ -95,7 +95,7 @@ export function useTrade(currentUserId?: string, currentRealm?: string) {
     } finally {
       setLoading(false);
     }
-  }, [currentUserId]);
+  }, [currentUserId, currentRealm]);
 
   const toggleListing = useCallback(async (
     mountId: string,
@@ -128,7 +128,7 @@ export function useTrade(currentUserId?: string, currentRealm?: string) {
         return next;
       });
     }
-  }, [currentUserId, currentRealm]);
+  }, [currentUserId]);
 
   useEffect(() => {
     fetchMyListings();
