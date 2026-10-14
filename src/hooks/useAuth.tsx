@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { flushAllPending, useBreedingStore } from '@/store/useBreedingStore';
 
 interface AuthContextValue {
   user: User | null;
@@ -65,7 +66,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { redirectTo: window.location.origin + '/auth/callback' },
     });
 
-  const signOut = () => supabase.auth.signOut();
+  const signOut = async () => {
+    // Enregistre d'abord les modifications en attente (il faut encore être connecté), puis déconnecte et vide l'écran.
+    try {
+      await flushAllPending();
+    } catch {
+      // Un échec de sauvegarde ne doit pas empêcher la déconnexion.
+    }
+    const result = await supabase.auth.signOut();
+    useBreedingStore.getState().clear();
+    return result;
+  };
 
   return <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithDiscord, signOut }}>{children}</AuthContext.Provider>;
 }
