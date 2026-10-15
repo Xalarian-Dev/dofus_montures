@@ -9,7 +9,7 @@ interface BreedingState {
   objectives: Partial<Record<MountCategory, ObjectiveTarget>>;
   /** Persists allowCloning per category independently of whether an objective is active. */
   allowCloningByCategory: Partial<Record<MountCategory, boolean>>;
-  /** Local-only: mounts the user is looking for in trades. */
+  /** Mounts the user is looking for in trades (saved in the `trade_wanted` table). */
   wantedMounts: Record<string, { male: boolean; female: boolean }>;
   setMaleCount: (mountId: string, count: number) => void;
   setFemaleCount: (mountId: string, count: number) => void;
@@ -18,7 +18,7 @@ interface BreedingState {
   setStepCount: (mountId: string, stepCount: number) => void;
   setStepMaleCount: (mountId: string, count: number) => void;
   setStepFemaleCount: (mountId: string, count: number) => void;
-  setWanted: (mountId: string, gender: 'male' | 'female', wanted: boolean) => void;
+  setWanted: (mountId: string, gender: 'male' | 'female', wanted: boolean) => Promise<void>;
   setObjective: (category: MountCategory, targetId: string, targetType: 'monture' | 'succes') => Promise<void>;
   setAllowCloning: (category: MountCategory, allowCloning: boolean) => Promise<void>;
   removeObjective: (category: MountCategory) => Promise<void>;
@@ -109,16 +109,29 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     scheduleDebouncedUpsert(mountId);
   },
 
-  setWanted: (mountId, gender, wanted) => {
-    set((state) => {
-      const current = state.wantedMounts[mountId] ?? { male: false, female: false };
-      return {
-        wantedMounts: {
-          ...state.wantedMounts,
-          [mountId]: { ...current, [gender]: wanted },
-        },
-      };
-    });
+  setWanted: async (mountId, gender, wanted) => {
+    const apply = (value: boolean) =>
+      set((state) => {
+        const current = state.wantedMounts[mountId] ?? { male: false, female: false };
+        return {
+          wantedMounts: {
+            ...state.wantedMounts,
+            [mountId]: { ...current, [gender]: value },
+          },
+        };
+      });
+    apply(wanted);
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    const { error } = wanted
+      ? await supabase.from('trade_wanted').upsert(
+          { user_id: data.user.id, mount_id: mountId, gender },
+          { onConflict: 'user_id,mount_id,gender' }
+        )
+      : await supabase.from('trade_wanted').delete()
+          .eq('user_id', data.user.id).eq('mount_id', mountId).eq('gender', gender);
+    // Enregistrement échoué : on remet l'écran dans l'état réel plutôt que d'afficher un faux succès.
+    if (error) apply(!wanted);
   },
 
   setDone: (mountId, done) => {
@@ -223,10 +236,21 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
   },
 
   loadFromSupabase: async (userId) => {
-    const [inventoryRes, objectivesRes] = await Promise.all([
+    const [inventoryRes, objectivesRes, wantedRes] = await Promise.all([
       supabase.from('breeding_inventory').select('mount_id, male_count, female_count, done, step_done, step_count, step_male_count, step_female_count').eq('user_id', userId),
       supabase.from('user_objectives').select('category, target_id, target_type, allow_cloning').eq('user_id', userId),
+      supabase.from('trade_wanted').select('mount_id, gender').eq('user_id', userId),
     ]);
+
+    if (wantedRes.data) {
+      const wantedMounts: Record<string, { male: boolean; female: boolean }> = {};
+      for (const row of wantedRes.data) {
+        const current = wantedMounts[row.mount_id] ?? { male: false, female: false };
+        if (row.gender === 'male' || row.gender === 'female') current[row.gender as 'male' | 'female'] = true;
+        wantedMounts[row.mount_id] = current;
+      }
+      set({ wantedMounts });
+    }
 
     if (inventoryRes.data) {
       const inventory: BreedingInventory = {};
@@ -261,8 +285,9 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     await Promise.all([
       supabase.from('breeding_inventory').delete().eq('user_id', userId),
       supabase.from('user_objectives').delete().eq('user_id', userId),
+      supabase.from('trade_wanted').delete().eq('user_id', userId),
     ]);
-    set({ inventory: {}, objectives: {} });
+    set({ inventory: {}, objectives: {}, wantedMounts: {} });
   },
 
   clear: () => set({ inventory: {}, objectives: {}, allowCloningByCategory: {}, wantedMounts: {} }),
