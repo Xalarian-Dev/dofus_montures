@@ -4,3 +4,22 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Pas plus de 3 PR de mise à jour ouvertes en même temps.
+    open-pull-requests-limit: 3
+    # Les mises à jour majeures (qui cassent souvent le site) sont faites à la main,
+    # par étapes, via un ticket de montée de version. Les alertes de sécurité restent actives.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Les paquets liés avancent ensemble, dans une seule PR.
+    groups:
+      mantine:
+        patterns:
+          - "@mantine/*"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+      recharts:
+        patterns:
+          - "recharts"
