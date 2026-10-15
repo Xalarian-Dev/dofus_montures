@@ -13,7 +13,7 @@
   "dependencies": {
     "@mantine/charts": "^7.17.8",
     "@mantine/core": "^7.0.0",
-    "@mantine/hooks": "^7.0.0",
+    "@mantine/hooks": "^9.7.2",
     "@mantine/notifications": "^7.17.8",
     "@supabase/supabase-js": "^2.98.0",
     "lucide-react": "^0.577.0",
