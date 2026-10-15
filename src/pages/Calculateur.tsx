@@ -5,6 +5,7 @@ import {
 } from '@mantine/core';
 import { Clock, CalendarClock, TriangleAlert, Calculator, TrendingUp } from 'lucide-react';
 import { xpToReachLevel, MOUNT_XP_CUMULATIVE } from '@/data/mountXp';
+import { useHelpOpen } from '@/hooks/useHelpOpen';
 
 // ─── Tier-based gauge drain calculation ──────────────────────────────────────
 
@@ -819,7 +820,7 @@ function FullPlanner() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Calculateur() {
-  const [helpOpen, setHelpOpen] = useState(true);
+  const [helpOpen, toggleHelp] = useHelpOpen('calculateur');
 
   return (
     <Container size="md" py="xl">
@@ -835,7 +836,7 @@ export default function Calculateur() {
         </Stack>
 
         <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
-          <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+          <UnstyledButton onClick={toggleHelp} w="100%">
             <Group justify="space-between">
               <Group gap="xs">
                 <Text fw={700} size="md" c="blue.7">Que faire ?</Text>

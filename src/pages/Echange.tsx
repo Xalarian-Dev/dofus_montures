@@ -17,6 +17,7 @@ import { EchangeInventaireTab } from '@/components/EchangeInventaireTab';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
+import { useHelpOpen } from '@/hooks/useHelpOpen';
 
 const allMounts = [...dragodindes, ...muldos, ...volkornes];
 const mountMap = new Map(allMounts.map((m) => [m.id, m]));
@@ -161,7 +162,7 @@ function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) =
   const wantedMounts = useBreedingStore((s) => s.wantedMounts);
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [mountFilter, setMountFilter] = useState<string | null>(null);
-  const [helpOpen, setHelpOpen] = useState(true);
+  const [helpOpen, toggleHelp] = useHelpOpen('echange');
 
   const afterCat = catFilter
     ? allTrades.filter((t) => t.listings.some((l) => l.category === catFilter))
@@ -200,7 +201,7 @@ function AnnonceTab({ onContact, currentRealm }: { onContact: (userId: string) =
   return (
     <Stack gap="lg">
       <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
-        <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+        <UnstyledButton onClick={toggleHelp} w="100%">
           <Group justify="space-between">
             <Group gap="xs">
               <Text fw={700} size="md" c="blue.7">Que faire ?</Text>

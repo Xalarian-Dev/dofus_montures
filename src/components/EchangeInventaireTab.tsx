@@ -10,6 +10,7 @@ import { useTrade } from '@/hooks/useTrade';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
+import { useHelpOpen } from '@/hooks/useHelpOpen';
 
 const CATEGORIES = [
   { key: 'dragodindes' as const, label: 'Dragodindes', color: 'teal', mounts: dragodindes },
@@ -28,7 +29,7 @@ export function EchangeInventaireTab() {
   const { myListings, toggleListing } = useTrade(user?.id);
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('all');
-  const [helpOpen, setHelpOpen] = useState(true);
+  const [helpOpen, toggleHelp] = useHelpOpen('echange-inventaire');
 
   if (!user) {
     return (
@@ -66,7 +67,7 @@ export function EchangeInventaireTab() {
     <Stack gap="xl">
       {/* Help banner */}
       <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
-        <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+        <UnstyledButton onClick={toggleHelp} w="100%">
           <Group justify="space-between">
             <Group gap="xs">
               <Text fw={700} size="md" c="blue.7">Que faire ?</Text>
