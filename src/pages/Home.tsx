@@ -1,4 +1,4 @@
-import { Container, SimpleGrid, Card, Title, Text, Group, Stack, Image, Box, ThemeIcon, Divider, Badge, Paper, Anchor, Button } from '@mantine/core';
+import { Container, SimpleGrid, Card, Title, Text, Group, Stack, Image, Box, ThemeIcon, Divider, Badge, Paper, Anchor } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookCheck, Target, ArrowLeftRight, BookOpen, Calculator, Heart } from 'lucide-react';
 

@@ -48,8 +48,9 @@ export default function PolitiqueConfidentialite() {
               Indispensables au fonctionnement du site.
             </Text>
             <Text size="sm" c="dimmed">
-              <strong>Stockage local (localStorage) :</strong> utilisé pour sauvegarder votre inventaire et votre progression
-              localement sur votre appareil.
+              <strong>Stockage local (localStorage) :</strong> utilisé pour mémoriser votre choix concernant les cookies et
+              votre session de connexion sur votre appareil. Votre inventaire et votre progression, eux, sont enregistrés sur nos serveurs (Supabase)
+              lorsque vous êtes connecté, afin de les retrouver sur tous vos appareils.
             </Text>
           </Stack>
           <Text size="sm" c="dimmed">

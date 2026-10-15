@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dofus Montures
 
-## Getting Started
+Site web d'aide à l'élevage de montures pour le jeu Dofus : calculateur de stratégie
+d'élevage, inventaire, objectifs, échanges entre joueurs et messagerie. Les données des
+joueurs connectés sont enregistrées dans une base Supabase.
 
-First, run the development server:
+Objectif commercial, public visé et adresse de production : **à compléter**.
+
+## Lancer le site en local
+
+Prérequis : [Node.js](https://nodejs.org) (version récente) et npm.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env     # puis renseigner les deux variables (voir ci-dessous)
+npm run dev              # lance le site (adresse affichée dans le terminal)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Autres commandes :
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Commande | Rôle |
+|---|---|
+| `npm run build` | vérifie les types (`tsc`) puis construit le site dans `dist/` |
+| `npm run lint` | lance le correcteur de code (ESLint) |
+| `npm run preview` | prévisualise le site construit |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Il n'y a pas encore de tests automatiques.
 
-## Learn More
+## Configuration
 
-To learn more about Next.js, take a look at the following resources:
+Deux variables d'environnement sont nécessaires (jamais de valeurs dans le dépôt) :
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `VITE_SUPABASE_URL` : adresse du projet Supabase ;
+- `VITE_SUPABASE_ANON_KEY` : clé publique (« anon ») du projet Supabase.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Le fichier `.env.example` donne le modèle.
 
-## Deploy on Vercel
+## Organisation du code
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `src/pages/` : une page par écran (accueil, Dragodindes, Muldos, Volkornes, calculateur,
+  objectifs, échange, profil, profil public, guide, pages légales).
+- `src/components/` : éléments d'interface partagés (navigation, bandeau cookies, pied de page...).
+- `src/data/` : données des montures (`mounts/`), succès, expérience, serveurs.
+- `src/lib/` : logique de calcul (`breedingStrategy.ts`), client Supabase, constantes.
+- `src/store/` : état de l'application (inventaire, objectifs) avec Zustand.
+- `src/hooks/` et `src/contexts/` : connexion, profil, échanges, messagerie.
+- `supabase/migrations/` : scripts SQL de la base (structure et règles d'accès), dans l'ordre
+  des dates. Ils sont **appliqués à la main** dans Supabase (SQL Editor), pas automatiquement.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Technologies
+
+React 19, TypeScript, Vite, Mantine (interface), Zustand, React Router, Supabase.
+Déploiement : Vercel (voir `vercel.json`).
+
+## Feuille de route
+
+À compléter.

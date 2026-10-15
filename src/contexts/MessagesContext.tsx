@@ -1,7 +1,6 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useMessages } from '@/hooks/useMessages';
 import { useAuth } from '@/hooks/useAuth';
-import type { Conversation, Message } from '@/hooks/useMessages';
 
 type MessagesContextValue = ReturnType<typeof useMessages>;
 
