@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { useBreedingStore } from '@/store/useBreedingStore';
+import { useHelpOpen } from '@/hooks/useHelpOpen';
 
 interface ResumeTabProps {
   mounts: MountSpecies[];
@@ -13,7 +14,7 @@ interface ResumeTabProps {
 export function ResumeTab({ mounts, achievements, metaAchievement }: ResumeTabProps) {
   const inventory = useBreedingStore((state) => state.inventory);
   const setDone = useBreedingStore((state) => state.setDone);
-  const [helpOpen, setHelpOpen] = useState(true);
+  const [helpOpen, toggleHelp] = useHelpOpen('resume');
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
 
   function toggleParents(mountId: string) {
@@ -39,7 +40,7 @@ export function ResumeTab({ mounts, achievements, metaAchievement }: ResumeTabPr
   return (
     <Stack gap="xl">
       <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
-        <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+        <UnstyledButton onClick={toggleHelp} w="100%">
           <Group justify="space-between">
             <Group gap="xs">
               <Text fw={700} size="md" c="blue.7">Que faire ?</Text>

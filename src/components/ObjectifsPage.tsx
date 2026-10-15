@@ -6,6 +6,7 @@ import { GenerationAchievement, MountSpecies } from '@/types/mount';
 import { useBreedingStore } from '@/store/useBreedingStore';
 import { StrategyPanel } from '@/components/StrategyPanel';
 import { useAuth } from '@/hooks/useAuth';
+import { useHelpOpen } from '@/hooks/useHelpOpen';
 
 interface ObjectifsPageProps {
   mounts: MountSpecies[];
@@ -67,11 +68,11 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
   const isLocked = (targetType: 'monture' | 'succes') =>
     currentObjective !== undefined && currentObjective.targetType === targetType;
 
-  const [helpOpen, setHelpOpen] = useState(true);
+  const [helpOpen, toggleHelp] = useHelpOpen('objectifs');
 
   const helpBanner = (
     <Paper withBorder p="md" radius="md" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-3)' }}>
-      <UnstyledButton onClick={() => setHelpOpen((o) => !o)} w="100%">
+      <UnstyledButton onClick={toggleHelp} w="100%">
         <Group justify="space-between">
           <Group gap="xs">
             <Text fw={700} size="md" c="blue.7">Que faire ?</Text>
