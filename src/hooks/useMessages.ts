@@ -20,6 +20,20 @@ export interface Conversation {
   unreadCount: number;
 }
 
+// Ligne renvoyée par la fonction SQL `my_conversations` (voir supabase/migrations).
+interface MyConversationRow {
+  id: string;
+  participant_a: string;
+  participant_b: string;
+  updated_at: string;
+  last_message_id: string | null;
+  last_message_sender_id: string | null;
+  last_message_content: string | null;
+  last_message_created_at: string | null;
+  last_message_read_at: string | null;
+  unread_count: number | string;
+}
+
 function mapMessage(m: Record<string, string>): Message {
   return {
     id: m.id,
@@ -55,35 +69,26 @@ export function useMessages(currentUserId?: string) {
 
   const fetchConversations = useCallback(async () => {
     if (!currentUserId) return;
-    const { data } = await supabase
-      .from('conversations')
-      .select('id, participant_a, participant_b, updated_at')
-      .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
-      .order('updated_at', { ascending: false });
-
+    const { data } = await supabase.rpc('my_conversations');
     if (!data) return;
 
-    const enriched = await Promise.all(
-      data.map(async (c) => {
-        const [lastMsgRes, unreadRes] = await Promise.all([
-          supabase.from('messages').select('*').eq('conversation_id', c.id)
-            .order('created_at', { ascending: false }).limit(1),
-          supabase.from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', c.id)
-            .neq('sender_id', currentUserId)
-            .is('read_at', null),
-        ]);
-        return {
-          id: c.id,
-          participantA: c.participant_a,
-          participantB: c.participant_b,
-          updatedAt: c.updated_at,
-          lastMessage: lastMsgRes.data?.[0] ? mapMessage(lastMsgRes.data[0]) : undefined,
-          unreadCount: unreadRes.count ?? 0,
-        };
-      })
-    );
+    const enriched: Conversation[] = data.map((c: MyConversationRow) => ({
+      id: c.id,
+      participantA: c.participant_a,
+      participantB: c.participant_b,
+      updatedAt: c.updated_at,
+      lastMessage: c.last_message_id
+        ? {
+            id: c.last_message_id,
+            conversationId: c.id,
+            senderId: c.last_message_sender_id as string,
+            content: c.last_message_content as string,
+            createdAt: c.last_message_created_at as string,
+            readAt: c.last_message_read_at ?? undefined,
+          }
+        : undefined,
+      unreadCount: Number(c.unread_count),
+    }));
 
     setConversations(enriched);
 
@@ -170,7 +175,8 @@ export function useMessages(currentUserId?: string) {
 
     channelRef.current = supabase
       .channel(`inbox-${currentUserId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+      // Seulement les messages qui nous sont adressés (colonne recipient_id).
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${currentUserId}` }, (payload) => {
         const msg = mapMessage(payload.new as Record<string, string>);
         setMessages((prev) => {
           if (!prev.has(msg.conversationId)) return prev;
@@ -178,17 +184,37 @@ export function useMessages(currentUserId?: string) {
           if (current.some((m) => m.id === msg.id)) return prev;
           return new Map(prev).set(msg.conversationId, [...current, msg]);
         });
-        fetchConversations();
+        // Mise à jour de la seule conversation concernée ; liste rechargée seulement si elle est inconnue.
+        let known = false;
+        setConversations((prev) => {
+          const conv = prev.find((c) => c.id === msg.conversationId);
+          if (!conv) return prev;
+          known = true;
+          return [
+            { ...conv, updatedAt: msg.createdAt, lastMessage: msg, unreadCount: conv.unreadCount + 1 },
+            ...prev.filter((c) => c.id !== msg.conversationId),
+          ];
+        });
+        if (!known) fetchConversations();
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, () => {
-        fetchConversations();
+      // Nos messages lus par l'autre personne : on met à jour la coche « lu » sans rien recharger.
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `sender_id=eq.${currentUserId}` }, (payload) => {
+        const msg = mapMessage(payload.new as Record<string, string>);
+        setMessages((prev) => {
+          const current = prev.get(msg.conversationId);
+          if (!current) return prev;
+          return new Map(prev).set(msg.conversationId, current.map((m) => (m.id === msg.id ? msg : m)));
+        });
+        setConversations((prev) =>
+          prev.map((c) => (c.lastMessage?.id === msg.id ? { ...c, lastMessage: msg } : c))
+        );
       })
       .subscribe();
 
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
-  }, [currentUserId]);
+  }, [currentUserId, fetchConversations]);
 
   const unreadTotal = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
