@@ -17,7 +17,7 @@
     "@mantine/hooks": "^7.0.0",
     "@mantine/notifications": "^7.17.8",
     "@supabase/supabase-js": "^2.98.0",
-    "lucide-react": "^0.577.0",
+    "lucide-react": "^1.58.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0",
