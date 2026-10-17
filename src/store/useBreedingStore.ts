@@ -193,6 +193,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
   },
 
   removeObjective: async (category) => {
+    const previous = get().objectives[category];
     set((state) => {
       const next = { ...state.objectives };
       delete next[category];
@@ -200,7 +201,9 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
     });
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
-    await supabase.from('user_objectives').delete().eq('user_id', data.user.id).eq('category', category);
+    const { error } = await supabase.from('user_objectives').delete().eq('user_id', data.user.id).eq('category', category);
+    // Suppression refusée : on remet l'objectif à l'écran plutôt que d'afficher un faux succès.
+    if (error && previous) set((state) => ({ objectives: { ...state.objectives, [category]: previous } }));
   },
 
   setObjective: async (category, targetId, targetType) => {
@@ -282,11 +285,16 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
   },
 
   resetAll: async (userId) => {
-    await Promise.all([
+    const results = await Promise.all([
       supabase.from('breeding_inventory').delete().eq('user_id', userId),
       supabase.from('user_objectives').delete().eq('user_id', userId),
       supabase.from('trade_wanted').delete().eq('user_id', userId),
     ]);
+    // Une suppression a échoué : on réaffiche l'état réel de la base plutôt qu'un écran vidé à tort.
+    if (results.some((r) => r.error)) {
+      await get().loadFromSupabase(userId);
+      return;
+    }
     set({ inventory: {}, objectives: {}, wantedMounts: {} });
   },
 
