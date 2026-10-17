@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { notifications } from '@mantine/notifications';
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from './useTrade';
 
@@ -121,28 +122,36 @@ export function useMessages(currentUserId?: string) {
     }
   }, [currentUserId]);
 
-  const sendMessage = useCallback(async (conversationId: string, content: string) => {
-    if (!currentUserId || !content.trim()) return;
-    const { data } = await supabase
+  const sendMessage = useCallback(async (conversationId: string, content: string): Promise<boolean> => {
+    if (!currentUserId || !content.trim()) return false;
+    const { data, error } = await supabase
       .from('messages')
       .insert({ conversation_id: conversationId, sender_id: currentUserId, content: content.trim() })
       .select().single();
 
-    if (data) {
-      const msg = mapMessage(data);
-      setMessages((prev) => {
-        const current = prev.get(conversationId) ?? [];
-        return new Map(prev).set(conversationId, [...current, msg]);
+    if (error || !data) {
+      notifications.show({
+        title: 'Message non envoyé',
+        message: 'Votre message n\'a pas pu être envoyé. Vérifiez votre connexion et réessayez.',
+        color: 'red',
       });
-      await supabase.from('conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', conversationId);
-      setConversations((prev) => {
-        const conv = prev.find((c) => c.id === conversationId);
-        if (!conv) return prev;
-        return [{ ...conv, updatedAt: msg.createdAt, lastMessage: msg }, ...prev.filter((c) => c.id !== conversationId)];
-      });
+      return false;
     }
+
+    const msg = mapMessage(data);
+    setMessages((prev) => {
+      const current = prev.get(conversationId) ?? [];
+      return new Map(prev).set(conversationId, [...current, msg]);
+    });
+    await supabase.from('conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
+    setConversations((prev) => {
+      const conv = prev.find((c) => c.id === conversationId);
+      if (!conv) return prev;
+      return [{ ...conv, updatedAt: msg.createdAt, lastMessage: msg }, ...prev.filter((c) => c.id !== conversationId)];
+    });
+    return true;
   }, [currentUserId]);
 
   const getOrCreateConversation = useCallback(async (otherUserId: string): Promise<string | null> => {

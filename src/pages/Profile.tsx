@@ -61,8 +61,8 @@ export default function ProfilePage() {
 
   async function handleSaveIngameName() {
     setIngameSuccess(false);
-    await saveIngameName(ingameName.trim());
-    setIngameSuccess(true);
+    const ok = await saveIngameName(ingameName.trim());
+    setIngameSuccess(ok);
   }
 
   async function handleReset() {
