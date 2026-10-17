@@ -347,7 +347,7 @@ function MessageThread({
   currentUserId: string;
   messages: Map<string, import('@/hooks/useMessages').Message[]>;
   profiles: Map<string, { fullName?: string; avatarUrl?: string; username?: string }>;
-  onSend: (text: string) => void;
+  onSend: (text: string) => Promise<boolean>;
   onBack: () => void;
 }) {
   const [input, setInput] = useState('');
@@ -358,10 +358,10 @@ function MessageThread({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [msgs.length]);
 
-  function handleSend() {
+  async function handleSend() {
     if (!input.trim()) return;
-    onSend(input.trim());
-    setInput('');
+    const ok = await onSend(input.trim());
+    if (ok) setInput('');
   }
 
   return (

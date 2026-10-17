@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { notifications } from '@mantine/notifications';
 import { supabase } from '@/lib/supabase';
 
 export interface Profile {
@@ -6,6 +7,14 @@ export interface Profile {
   ingameName: string;
   isVisible: boolean;
   realm: string;
+}
+
+function notifySaveError() {
+  notifications.show({
+    title: 'Enregistrement impossible',
+    message: 'Votre réglage n\'a pas été enregistré. Vérifiez votre connexion et réessayez.',
+    color: 'red',
+  });
 }
 
 export function useProfile(userId?: string) {
@@ -59,32 +68,36 @@ export function useProfile(userId?: string) {
     return 'ok';
   }
 
-  async function saveIngameName(ingameName: string) {
-    if (!userId) return;
+  async function saveIngameName(ingameName: string): Promise<boolean> {
+    if (!userId) return false;
     setSaving(true);
-    await supabase
+    const { error } = await supabase
       .from('user_profiles')
       .update({ ingame_name: ingameName, updated_at: new Date().toISOString() })
       .eq('user_id', userId);
     setSaving(false);
+    if (error) { notifySaveError(); return false; }
     setProfile((p) => ({ ...p, ingameName }));
+    return true;
   }
 
   async function saveRealm(realm: string) {
     if (!userId) return;
-    await supabase
+    const { error } = await supabase
       .from('user_profiles')
       .update({ realm, updated_at: new Date().toISOString() })
       .eq('user_id', userId);
+    if (error) { notifySaveError(); return; }
     setProfile((p) => ({ ...p, realm }));
   }
 
   async function saveVisibility(isVisible: boolean) {
     if (!userId) return;
-    await supabase
+    const { error } = await supabase
       .from('user_profiles')
       .update({ is_visible: isVisible, updated_at: new Date().toISOString() })
       .eq('user_id', userId);
+    if (error) { notifySaveError(); return; }
     setProfile((p) => ({ ...p, isVisible }));
   }
 
