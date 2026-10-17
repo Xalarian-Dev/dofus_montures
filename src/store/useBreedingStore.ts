@@ -76,6 +76,13 @@ export function flushAllPending(): Promise<void> {
   return Promise.all(writes).then(() => undefined);
 }
 
+/** Cancel all pending debounced writes without saving them (used by the reset). */
+function cancelAllPending() {
+  for (const timer of pendingTimers.values()) clearTimeout(timer);
+  pendingTimers.clear();
+  dirtyMounts.clear();
+}
+
 // Flush on page unload so no data is lost.
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', flushAllPending);
@@ -285,6 +292,8 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
   },
 
   resetAll: async (userId) => {
+    // Sans cela, une sauvegarde différée de moins de 2 s réécrirait une monture après l'effacement.
+    cancelAllPending();
     const results = await Promise.all([
       supabase.from('breeding_inventory').delete().eq('user_id', userId),
       supabase.from('user_objectives').delete().eq('user_id', userId),
@@ -295,7 +304,7 @@ export const useBreedingStore = create<BreedingState>()((set, get) => ({
       await get().loadFromSupabase(userId);
       return;
     }
-    set({ inventory: {}, objectives: {}, wantedMounts: {} });
+    set({ inventory: {}, objectives: {}, allowCloningByCategory: {}, wantedMounts: {} });
   },
 
   clear: () => set({ inventory: {}, objectives: {}, allowCloningByCategory: {}, wantedMounts: {} }),
