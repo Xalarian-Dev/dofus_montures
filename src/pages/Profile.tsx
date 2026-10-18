@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useBreedingStore } from '@/store/useBreedingStore';
 import { useNavigate } from 'react-router-dom';
 import { DOFUS_REALMS } from '@/data/realms';
+import { validateUsername } from '@/lib/username';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -51,8 +52,8 @@ export default function ProfilePage() {
   async function handleSaveUsername() {
     setUsernameError('');
     setUsernameSuccess(false);
-    if (!username.trim()) { setUsernameError('Le nom ne peut pas être vide.'); return; }
-    if (username.length < 3) { setUsernameError('Minimum 3 caractères.'); return; }
+    const invalid = validateUsername(username.trim());
+    if (invalid) { setUsernameError(invalid); return; }
     const result = await saveUsername(username.trim());
     if (result === 'taken') setUsernameError('Ce nom est déjà utilisé.');
     else if (result === 'error') setUsernameError('Erreur lors de la sauvegarde.');
