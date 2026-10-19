@@ -47,7 +47,7 @@ export function useProfile(userId?: string) {
     const { data } = await supabase
       .from('user_profiles')
       .select('user_id')
-      .eq('username', username)
+      .ilike('username', username.replace(/[\\%_]/g, '\\$&')) // insensible à la casse ; « _ » et « % » sont des jokers de ilike
       .neq('user_id', userId!)
       .maybeSingle();
     return !data;
@@ -63,7 +63,8 @@ export function useProfile(userId?: string) {
       .update({ username, updated_at: new Date().toISOString() })
       .eq('user_id', userId);
     setSaving(false);
-    if (error) return 'error';
+    // 23505 = nom déjà pris (la base refuse le doublon même si deux joueurs le choisissent en même temps)
+    if (error) return error.code === '23505' ? 'taken' : 'error';
     setProfile((p) => ({ ...p, username }));
     return 'ok';
   }
