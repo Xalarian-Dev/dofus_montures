@@ -11,6 +11,7 @@ import { useMessagesContext } from '@/contexts/MessagesContext';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
+import { NotFoundView } from '@/components/NotFoundView';
 
 const allMounts = [...dragodindes, ...muldos, ...volkornes];
 const mountMap = new Map(allMounts.map((m) => [m.id, m]));
@@ -108,13 +109,10 @@ export default function PublicProfilePage() {
 
   if (notFound) {
     return (
-      <Container size="sm" py="xl">
-        <Stack align="center" gap="md">
-          <Text fw={700} size="lg">Profil indisponible</Text>
-          <Text c="dimmed" size="sm">Ce profil n'existe pas ou n'est pas visible publiquement.</Text>
-          <Button variant="default" leftSection={<ArrowLeft size={14} />} onClick={() => navigate(-1)}>Retour</Button>
-        </Stack>
-      </Container>
+      <NotFoundView
+        title="Ce joueur n'existe pas ou a masqué son profil"
+        message="Aucun profil visible ne porte ce nom. Vérifiez l'orthographe du lien."
+      />
     );
   }
 
