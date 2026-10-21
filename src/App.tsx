@@ -36,6 +36,7 @@ const MentionsLegales = lazyWithRetry(() => import('./pages/MentionsLegales'));
 const Profile = lazyWithRetry(() => import('./pages/Profile'));
 const Calculateur = lazyWithRetry(() => import('./pages/Calculateur'));
 const PublicProfile = lazyWithRetry(() => import('./pages/PublicProfile'));
+const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
 
 function CanonicalUpdater() {
   const { pathname } = useLocation();
@@ -106,6 +107,7 @@ export default function App() {
                 <Route path="/calculateur" element={<Calculateur />} />
                 <Route path="/profil" element={<Profile />} />
                 <Route path="/:username" element={<PublicProfile />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </Box>
