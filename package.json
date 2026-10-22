@@ -12,16 +12,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@mantine/charts": "^8.3.18",
-    "@mantine/core": "^8.3.18",
-    "@mantine/hooks": "^8.3.18",
-    "@mantine/notifications": "^8.3.18",
+    "@mantine/charts": "^9.7.3",
+    "@mantine/core": "^9.7.3",
+    "@mantine/hooks": "^9.7.3",
+    "@mantine/notifications": "^9.7.3",
     "@supabase/supabase-js": "^2.98.0",
     "lucide-react": "^1.58.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0",
-    "recharts": "^2.13.3",
+    "recharts": "^3.10.1",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

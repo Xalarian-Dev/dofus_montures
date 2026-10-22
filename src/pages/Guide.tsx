@@ -63,7 +63,8 @@ function XpSection() {
   const [showTables, setShowTables] = useState(false);
   const [openGroup, setOpenGroup] = useState<number | null>(null);
 
-  const chartData = view === 'per-level' ? XP_PER_LEVEL_DATA : XP_CUMUL_DATA;
+  const chartData: { niveau: number; xp?: number; cumul?: number }[] =
+    view === 'per-level' ? XP_PER_LEVEL_DATA : XP_CUMUL_DATA;
 
   const groups = Array.from({ length: 20 }, (_, g) => {
     const startLevel = g * 10 + 1;
@@ -136,7 +137,7 @@ function XpSection() {
             {showTables ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </Group>
         </UnstyledButton>
-        <Collapse in={showTables}>
+        <Collapse expanded={showTables}>
           <Divider color="gray.2" />
           <Stack gap="xs" p="xs">
             {groups.map(({ g, startLevel, endLevel, totalXp }) => (
@@ -150,7 +151,7 @@ function XpSection() {
                     </Group>
                   </Group>
                 </UnstyledButton>
-                <Collapse in={openGroup === g}>
+                <Collapse expanded={openGroup === g}>
                   <Divider color="gray.2" />
                   <Table fz="xs" withColumnBorders>
                     <Table.Thead bg="gray.0">
