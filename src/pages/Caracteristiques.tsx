@@ -1,6 +1,7 @@
-import { Container, Stack, Title, Text, Tabs, TextInput, MultiSelect, SimpleGrid, Paper, Image, Badge, Group, Divider } from '@mantine/core';
+import { Container, Stack, Title, Text, Tabs, TextInput, SimpleGrid, Paper, Image, Badge, Group, Divider, Collapse, Button, Chip } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
 import { MountSpecies, MountStats } from '@/types/mount';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
@@ -125,6 +126,15 @@ const CATEGORIES = [
   { value: 'volkornes', label: 'Volkornes', mounts: volkornes, color: 'red' as const },
 ];
 
+// Regroupement des caractéristiques pour le bloc de filtres (toutes les clés de STAT_LABELS y figurent).
+const STAT_GROUPS: { label: string; stats: (keyof MountStats)[] }[] = [
+  { label: 'Principales', stats: ['vitalite', 'force', 'intelligence', 'agilite', 'chance', 'initiative', 'prospection'] },
+  { label: 'Combat', stats: ['pa', 'pm', 'portee', 'invocations', 'soins', 'puissance', 'critique', 'dommagesCritiques'] },
+  { label: 'Dommages', stats: ['dommagesTerre', 'dommagesFeu', 'dommagesEau', 'dommagesAir', 'dommagesPoussee'] },
+  { label: 'Résistances', stats: ['resistance', 'resistanceTerre', 'resistanceFeu', 'resistanceEau', 'resistanceAir', 'resistancesPoussee', 'resistancesCritiques'] },
+  { label: 'Esquive, retrait et mobilité', stats: ['esquivePA', 'esquivePM', 'retraitPA', 'retraitPM', 'tacle', 'fuite', 'renvoi'] },
+];
+
 const PERCENT_STATS = new Set<keyof MountStats>(['critique', 'resistance', 'resistanceFeu', 'resistanceEau', 'resistanceTerre', 'resistanceAir']);
 
 function StatBadge({ stat, value }: { stat: keyof MountStats; value: number }) {
@@ -234,17 +244,7 @@ export default function Caracteristiques() {
   const [nameFilter, setNameFilter] = useState('');
   const [statFilter, setStatFilter] = useState<string[]>([]);
 
-  const statOptions = STAT_KEYS.map((k) => ({ value: k, label: STAT_LABELS[k] }));
-
-  const renderStatOption = ({ option }: { option: { value: string; label: string } }) => {
-    const icon = STAT_ICONS[option.value as keyof MountStats];
-    return (
-      <Group gap={6} wrap="nowrap">
-        {icon && <img src={icon} alt="" width={14} height={14} style={{ imageRendering: 'pixelated', flexShrink: 0 }} />}
-        <span>{option.label}</span>
-      </Group>
-    );
-  };
+  const [filtersOpened, { toggle: toggleFilters }] = useDisclosure(false);
 
   const counts = useMemo(() =>
     Object.fromEntries(CATEGORIES.map((cat) => [cat.value, filterMounts(cat.mounts, nameFilter, statFilter).length])),
@@ -259,25 +259,59 @@ export default function Caracteristiques() {
           <Text c="dimmed">Statistiques de toutes les montures au niveau maximum.</Text>
         </Stack>
 
-        {/* Filters */}
-        <Group gap="sm" align="flex-end">
-          <TextInput
-            placeholder="Rechercher une monture..."
-            leftSection={<Search size={14} />}
-            value={nameFilter}
-            onChange={(e) => setNameFilter(e.currentTarget.value)}
-            style={{ flex: 1, maxWidth: 320 }}
-          />
-          <MultiSelect
-            placeholder="Filtrer par statistique"
-            data={statOptions}
-            value={statFilter}
-            onChange={setStatFilter}
-            clearable
-            renderOption={renderStatOption}
-            style={{ flex: 1, maxWidth: 400 }}
-          />
-        </Group>
+        {/* Filtres */}
+        <Stack gap="sm">
+          <Group gap="sm" align="center">
+            <TextInput
+              placeholder="Rechercher une monture..."
+              leftSection={<Search size={14} />}
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.currentTarget.value)}
+              style={{ flex: 1, maxWidth: 320 }}
+            />
+            <Button
+              variant={statFilter.length > 0 ? 'light' : 'default'}
+              leftSection={<SlidersHorizontal size={14} />}
+              rightSection={filtersOpened ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              onClick={toggleFilters}
+              aria-expanded={filtersOpened}
+              aria-controls="filtres-caracteristiques"
+            >
+              Filtrer par caractéristiques{statFilter.length > 0 ? ` (${statFilter.length})` : ''}
+            </Button>
+            {statFilter.length > 0 && (
+              <Button variant="subtle" color="gray" onClick={() => setStatFilter([])}>
+                Vider les filtres
+              </Button>
+            )}
+          </Group>
+
+          <Collapse in={filtersOpened} id="filtres-caracteristiques">
+            <Paper withBorder p="md" radius="md" bg="white">
+              <Chip.Group multiple value={statFilter} onChange={setStatFilter}>
+                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+                  {STAT_GROUPS.map((group) => (
+                    <Stack key={group.label} gap="xs">
+                      <Text fw={700} size="sm" c="dark">{group.label}</Text>
+                      <Group gap={6}>
+                        {group.stats.map((stat) => (
+                          <Chip key={stat} value={stat} size="xs" variant="outline">
+                            <Group gap={4} wrap="nowrap" component="span">
+                              {STAT_ICONS[stat] && (
+                                <img src={STAT_ICONS[stat]} alt="" width={14} height={14} style={{ imageRendering: 'pixelated', flexShrink: 0 }} />
+                              )}
+                              {STAT_LABELS[stat]}
+                            </Group>
+                          </Chip>
+                        ))}
+                      </Group>
+                    </Stack>
+                  ))}
+                </SimpleGrid>
+              </Chip.Group>
+            </Paper>
+          </Collapse>
+        </Stack>
 
         <Tabs defaultValue="dragodindes">
           <Tabs.List mb="lg">
