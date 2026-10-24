@@ -6,6 +6,7 @@ import '@mantine/notifications/styles.css';
 import './index.css';
 import App from './App';
 import { AuthProvider } from './hooks/useAuth';
+import CalcAlertWatcher from './components/CalcAlertWatcher';
 
 const theme = createTheme({
   primaryColor: 'orange',
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MantineProvider theme={theme}>
       <Notifications position="bottom-right" />
+      <CalcAlertWatcher />
       <AuthProvider>
         <App />
       </AuthProvider>
