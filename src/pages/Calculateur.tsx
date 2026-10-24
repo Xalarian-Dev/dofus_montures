@@ -6,6 +6,7 @@ import {
 import { Clock, CalendarClock, TriangleAlert, Calculator, TrendingUp } from 'lucide-react';
 import { xpToReachLevel, MOUNT_XP_CUMULATIVE } from '@/data/mountXp';
 import { useHelpOpen } from '@/hooks/useHelpOpen';
+import CalcAlertButton from '@/components/CalcAlertButton';
 
 // ─── Tier-based gauge drain calculation ──────────────────────────────────────
 
@@ -120,6 +121,7 @@ interface SimpleCalcResult {
   seconds: number;
   depleted: boolean;
   datetime: string;
+  endAt: number;
   ready: boolean;
   isSer: boolean;
   statLabel: string;
@@ -134,6 +136,7 @@ interface XpCalcResult {
   drainSeconds: number;
   drainDepleted: boolean;
   drainDatetime: string;
+  drainEndAt: number;
   reachableLevel: number;
 }
 
@@ -156,6 +159,7 @@ function SimpleCalc() {
 
   function handleCalculate() {
     if (isXp) {
+      const now = Date.now();
       const currentLevel = levelFromTotalXp(totalXp);
       const xpAtCurrentLevel = xpToReachLevel(currentLevel);
       const xpInLevel = totalXp - xpAtCurrentLevel;
@@ -179,7 +183,8 @@ function SimpleCalc() {
         xpRemaining,
         drainSeconds,
         drainDepleted,
-        drainDatetime: formatDatetime(drainSeconds, Date.now()),
+        drainDatetime: formatDatetime(drainSeconds, now),
+        drainEndAt: now + drainSeconds * 1000,
         reachableLevel,
       });
       return;
@@ -189,7 +194,8 @@ function SimpleCalc() {
     const ready = isSer ? current === sereniteTarget : current >= 20000;
     const { seconds, depleted, actualDrained } = calcDrainSeconds(gaugeFill, needed);
     const statLabel = isSer ? 'Sérénité' : (statConf?.label ?? '');
-    setResult({ needed, actualDrained, seconds, depleted, datetime: formatDatetime(seconds, Date.now()), ready, isSer, statLabel });
+    const now = Date.now();
+    setResult({ needed, actualDrained, seconds, depleted, datetime: formatDatetime(seconds, now), endAt: now + seconds * 1000, ready, isSer, statLabel });
   }
 
   function handleModeChange(v: string) {
@@ -368,9 +374,13 @@ function SimpleCalc() {
                 <Paper withBorder p="md" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
                   <Group gap="sm" wrap="nowrap">
                     <CalendarClock size={16} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0 }} />
-                    <Stack gap={0}>
+                    <Stack gap={4}>
                       <Text size="xs" c="dimmed">{result.isSer ? 'Sérénité atteinte le' : 'Sortir la monture le'}</Text>
                       <Text fw={700} size="sm" c="orange.7">{result.datetime}</Text>
+                      <CalcAlertButton
+                        endAt={result.endAt}
+                        label={result.isSer ? `Sérénité atteinte (${result.statLabel})` : `Sortir la monture (${result.statLabel})`}
+                      />
                     </Stack>
                   </Group>
                 </Paper>
@@ -424,9 +434,10 @@ function SimpleCalc() {
                     <Paper withBorder p="md" radius="md" bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
                       <Group gap="sm" wrap="nowrap">
                         <CalendarClock size={16} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0 }} />
-                        <Stack gap={0}>
+                        <Stack gap={4}>
                           <Text size="xs" c="dimmed">Niveau {xpResult.targetLevel} atteint le</Text>
                           <Text fw={700} size="sm" c="orange.7">{xpResult.drainDatetime}</Text>
+                          <CalcAlertButton endAt={xpResult.drainEndAt} label={`Niveau ${xpResult.targetLevel} atteint`} />
                         </Stack>
                       </Group>
                     </Paper>
