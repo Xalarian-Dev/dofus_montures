@@ -845,7 +845,7 @@ export default function Calculateur() {
               <Text size="sm" c="blue.5">{helpOpen ? '▲ Réduire' : '▼ Afficher'}</Text>
             </Group>
           </UnstyledButton>
-          <Collapse in={helpOpen}>
+          <Collapse expanded={helpOpen}>
             <Divider my="sm" color="blue.2" />
             <List size="sm" spacing="xs" c="dark">
               <List.Item>
