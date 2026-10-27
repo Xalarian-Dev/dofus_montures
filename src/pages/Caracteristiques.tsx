@@ -286,7 +286,7 @@ export default function Caracteristiques() {
             )}
           </Group>
 
-          <Collapse in={filtersOpened} id="filtres-caracteristiques">
+          <Collapse expanded={filtersOpened} id="filtres-caracteristiques">
             <Paper withBorder p="md" radius="md" bg="white">
               <Chip.Group multiple value={statFilter} onChange={setStatFilter}>
                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
