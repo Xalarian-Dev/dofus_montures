@@ -1,53 +1,23 @@
-import { useEffect } from 'react';
-import { notifications } from '@mantine/notifications';
+import { useEffect, useState } from 'react';
+import { Button, Modal, Stack, Text } from '@mantine/core';
+import { Bell } from 'lucide-react';
 import { CALC_ALERT_EVENT, clearCalcAlert, readCalcAlert } from '@/lib/calcAlert';
 
 const BLINK_MESSAGE = '🔔 Prête !';
 
 /** Surveille l'alerte du calculateur, quelle que soit la page ouverte. */
 export default function CalcAlertWatcher() {
+  // Texte de l'alerte déclenchée ; tant qu'il est là, la fenêtre reste au centre de l'écran.
+  const [ready, setReady] = useState<string | null>(null);
+
   useEffect(() => {
     let interval: number | undefined;
-    let blink: number | undefined;
-    const originalTitle = document.title;
-
-    function stopBlink() {
-      if (blink === undefined) return;
-      window.clearInterval(blink);
-      blink = undefined;
-      document.title = originalTitle;
-    }
-
-    function startBlink() {
-      if (blink !== undefined) return;
-      let on = false;
-      blink = window.setInterval(() => {
-        on = !on;
-        document.title = on ? BLINK_MESSAGE : originalTitle;
-      }, 1000);
-      // Le clignotement s'arrête dès que le joueur revient sur l'onglet.
-      const stop = () => {
-        if (document.visibilityState === 'hidden') return;
-        stopBlink();
-        window.removeEventListener('focus', stop);
-        document.removeEventListener('visibilitychange', stop);
-      };
-      window.addEventListener('focus', stop);
-      document.addEventListener('visibilitychange', stop);
-      if (document.visibilityState !== 'hidden' && document.hasFocus()) stop();
-    }
 
     function check() {
       const alert = readCalcAlert();
       if (!alert || alert.endAt > Date.now()) return;
       clearCalcAlert();
-      notifications.show({
-        title: 'Ta monture est prête',
-        message: alert.label,
-        color: 'orange',
-        autoClose: false,
-      });
-      startBlink();
+      setReady(alert.label);
     }
 
     function schedule() {
@@ -63,9 +33,44 @@ export default function CalcAlertWatcher() {
       window.removeEventListener(CALC_ALERT_EVENT, schedule);
       window.removeEventListener('storage', schedule);
       if (interval !== undefined) window.clearInterval(interval);
-      stopBlink();
     };
   }, []);
 
-  return null;
+  // Le titre de l'onglet clignote jusqu'à ce que le joueur ferme la fenêtre (même s'il regarde déjà le site).
+  useEffect(() => {
+    if (ready === null) return;
+    const originalTitle = document.title;
+    let on = false;
+    const blink = window.setInterval(() => {
+      on = !on;
+      document.title = on ? BLINK_MESSAGE : originalTitle;
+    }, 800);
+    return () => {
+      window.clearInterval(blink);
+      document.title = originalTitle;
+    };
+  }, [ready]);
+
+  return (
+    <Modal
+      opened={ready !== null}
+      onClose={() => setReady(null)}
+      centered
+      size="sm"
+      withCloseButton={false}
+      closeOnClickOutside={false}
+      title={
+        <Text fw={700} size="lg">
+          🔔 Ta monture est prête !
+        </Text>
+      }
+    >
+      <Stack>
+        <Text>{ready}</Text>
+        <Button leftSection={<Bell size={16} />} onClick={() => setReady(null)}>
+          OK
+        </Button>
+      </Stack>
+    </Modal>
+  );
 }
