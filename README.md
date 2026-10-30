@@ -22,9 +22,10 @@ Autres commandes :
 |---|---|
 | `npm run build` | vérifie les types (`tsc`) puis construit le site dans `dist/` |
 | `npm run lint` | lance le correcteur de code (ESLint) |
+| `npm test` | lance les tests techniques (Vitest) |
 | `npm run preview` | prévisualise le site construit |
 
-Il n'y a pas encore de tests automatiques.
+`npm test` lance des tests techniques (Vitest). Une vérification automatique (types, lint, tests, build) s'exécute aussi sur GitHub à chaque envoi de code (`.github/workflows/ci.yml`).
 
 ## Configuration
 
@@ -45,7 +46,9 @@ Le fichier `.env.example` donne le modèle.
 - `src/store/` : état de l'application (inventaire, objectifs) avec Zustand.
 - `src/hooks/` et `src/contexts/` : connexion, profil, échanges, messagerie.
 - `supabase/migrations/` : scripts SQL de la base (structure et règles d'accès), dans l'ordre
-  des dates. Ils sont **appliqués à la main** dans Supabase (SQL Editor), pas automatiquement.
+  des dates. Les migrations qui ne détruisent rien sont appliquées automatiquement après la fusion de la
+  pull request, une fois relues ; tout ce qui modifie ou supprime des données reste appliqué à la main
+  dans Supabase (SQL Editor).
 
 ## Technologies
 
