@@ -1,7 +1,7 @@
-import { Stack, Group, Text, Badge, Paper, Image, Divider, NumberInput, ActionIcon, Center, TextInput, SegmentedControl, List, Collapse, UnstyledButton } from '@mantine/core';
+import { Stack, Group, Text, Badge, Paper, Image, Button, Divider, NumberInput, ActionIcon, Center, TextInput, SegmentedControl, List, Collapse, UnstyledButton } from '@mantine/core';
 import { useState } from 'react';
 import { notifications } from '@mantine/notifications';
-import { Lock, Search } from 'lucide-react';
+import { Copy, Lock, Search } from 'lucide-react';
 
 import { useBreedingStore } from '@/store/useBreedingStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +11,7 @@ import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
 import { useHelpOpen } from '@/hooks/useHelpOpen';
+import { buildTradeText } from '@/lib/tradeText';
 
 const CATEGORIES = [
   { key: 'dragodindes' as const, label: 'Dragodindes', color: 'teal', mounts: dragodindes },
@@ -58,6 +59,41 @@ export function EchangeInventaireTab() {
       return false;
     }
     return true;
+  }
+
+  async function copyMyList() {
+    const allMounts = CATEGORIES.flatMap((c) => c.mounts);
+    const nameOf = (id: string) => allMounts.find((m) => m.id === id)?.name ?? id;
+    const text = buildTradeText({
+      offers: [...myListings].map(([id, genders]) => ({
+        name: nameOf(id),
+        male: genders.has('male'),
+        female: genders.has('female'),
+      })),
+      wanted: Object.entries(wantedMounts).map(([id, w]) => ({ name: nameOf(id), male: w.male, female: w.female })),
+      realm: profile.realm || undefined,
+      profileUrl: profile.username ? `${window.location.origin}/${profile.username}` : undefined,
+    });
+    if (!text) {
+      notifications.show({
+        title: 'Liste vide',
+        message: 'Proposez ou recherchez au moins une monture (boutons ♂ / ♀) avant de copier votre liste.',
+        color: 'orange',
+        autoClose: 6000,
+      });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      notifications.show({ title: 'Liste copiée', message: 'Collez-la sur Discord.', color: 'green', autoClose: 4000 });
+    } catch {
+      notifications.show({
+        title: 'Copie impossible',
+        message: 'Votre navigateur a refusé l\'accès au presse-papiers.',
+        color: 'red',
+        autoClose: 6000,
+      });
+    }
   }
 
   const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -117,6 +153,9 @@ export function EchangeInventaireTab() {
             { value: 'volkornes', label: 'Volkornes' },
           ]}
         />
+        <Button size="sm" variant="light" color="orange" leftSection={<Copy size={14} />} onClick={copyMyList}>
+          Copier ma liste
+        </Button>
       </Group>
 
       {CATEGORIES.filter(({ key }) => catFilter === 'all' || catFilter === key).map(({ key, label, color, mounts }) => {
