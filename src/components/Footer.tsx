@@ -8,6 +8,13 @@ const EMAIL = ['xalarian.dev', 'gmail.com'].join('@');
 
 const changelog = [
   {
+    version: '0.6',
+    date: '2 novembre 2026',
+    changes: [
+      'Textes gris et boutons orange plus foncés — la page d\'accueil, le bandeau cookies et le bouton « Connexion » sont plus faciles à lire',
+    ],
+  },
+  {
     version: '0.5',
     date: '4 avril 2026',
     changes: [
