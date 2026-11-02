@@ -17,3 +17,8 @@
   background-color: rgba(255, 255, 255, 0.2);
   box-shadow: inset 0 -2px 0 rgba(253, 186, 116, 0.85);
 }
+
+/* Texte secondaire (« dimmed ») plus foncé : contraste d'au moins 4,5 : 1 sur blanc et sur beige (WCAG AA) */
+:root[data-mantine-color-scheme='light'] {
+  --mantine-color-dimmed: #5c636a;
+}
