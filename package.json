@@ -12,9 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@mantine/charts": "^9.7.3",
-    "@mantine/core": "^9.7.3",
-    "@mantine/hooks": "^9.7.3",
+    "@mantine/charts": "^9.7.4",
+    "@mantine/core": "^9.7.4",
+    "@mantine/hooks": "^9.7.4",
     "@mantine/notifications": "^9.7.3",
     "@supabase/supabase-js": "^2.98.0",
     "lucide-react": "^1.58.0",
