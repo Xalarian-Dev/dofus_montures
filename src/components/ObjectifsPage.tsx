@@ -7,6 +7,7 @@ import { useBreedingStore } from '@/store/useBreedingStore';
 import { StrategyPanel } from '@/components/StrategyPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useHelpOpen } from '@/hooks/useHelpOpen';
+import { LoginButton } from '@/components/LoginButton';
 
 interface ObjectifsPageProps {
   mounts: MountSpecies[];
@@ -122,6 +123,7 @@ export function ObjectifsPage({ mounts, achievements, metaAchievement }: Objecti
                 <Text fw={700} size="sm" c="dark">Connexion requise</Text>
                 <Text size="sm" c="dimmed" ta="center">Connectez-vous pour accéder aux stratégies d'élevage et sauvegarder vos objectifs.</Text>
               </Stack>
+              <LoginButton />
             </Stack>
           </Paper>
         </Center>

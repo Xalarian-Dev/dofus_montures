@@ -8,6 +8,13 @@ const EMAIL = ['xalarian.dev', 'gmail.com'].join('@');
 
 const changelog = [
   {
+    version: '0.7',
+    date: '20 novembre 2026',
+    changes: [
+      'Bouton « Se connecter » sur les cartes « Connexion requise » (inventaire, messagerie, objectifs, profils publics) et dans le message affiché en cliquant sur « Contacter » sans être connecté',
+    ],
+  },
+  {
     version: '0.6',
     date: '2 novembre 2026',
     changes: [

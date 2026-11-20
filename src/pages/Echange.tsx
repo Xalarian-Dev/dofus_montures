@@ -14,6 +14,7 @@ import { useMessagesContext } from '@/contexts/MessagesContext';
 import type { Conversation } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { EchangeInventaireTab } from '@/components/EchangeInventaireTab';
+import { LoginButton } from '@/components/LoginButton';
 import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
@@ -52,9 +53,14 @@ function TradeCard({ trade, onContact, wantedMounts }: { trade: UserTrade; onCon
   const displayName = profile.username ?? profile.fullName ?? 'Joueur';
 
   function requireLogin() {
-    notifications.show({
+    const id = notifications.show({
       title: 'Connexion requise',
-      message: 'Connectez-vous pour contacter un joueur.',
+      message: (
+        <Stack gap="xs" align="flex-start">
+          <Text size="sm">Connectez-vous pour contacter un joueur.</Text>
+          <LoginButton onClick={() => notifications.hide(id)} />
+        </Stack>
+      ),
       color: 'orange',
     });
   }
@@ -453,6 +459,7 @@ function MessagesTab({
             <Text size="sm" c="dimmed">
               Connectez-vous pour accéder à votre messagerie.
             </Text>
+            <LoginButton />
           </Stack>
         </Paper>
       </Center>

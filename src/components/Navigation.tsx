@@ -1,10 +1,12 @@
 import { Box, Group, Title, Text, Anchor, Button, Modal, Stack, Divider, Avatar, Indicator, Burger, Drawer } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LogIn, LogOut, Heart } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useMessagesContext } from '@/contexts/MessagesContext';
+import { onLoginRequest } from '@/lib/loginRequest';
 
 const links = [
   { href: '/dragodindes', label: 'Dragodindes' },
@@ -22,6 +24,8 @@ export function Navigation() {
   const [loginOpened, { open: openLogin, close: closeLogin }] = useDisclosure(false);
   const [drawerOpened, { toggle: toggleDrawer, close: closeDrawer }] = useDisclosure(false);
   const { unreadTotal } = useMessagesContext();
+
+  useEffect(() => onLoginRequest(openLogin), [openLogin]);
 
   const navLink = (link: typeof links[number], mobile = false) => (
     <Anchor

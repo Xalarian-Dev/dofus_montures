@@ -12,6 +12,7 @@ import { dragodindes } from '@/data/mounts/dragodindes';
 import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
 import { NotFoundView } from '@/components/NotFoundView';
+import { LoginButton } from '@/components/LoginButton';
 
 const allMounts = [...dragodindes, ...muldos, ...volkornes];
 const mountMap = new Map(allMounts.map((m) => [m.id, m]));
@@ -100,6 +101,7 @@ export default function PublicProfilePage() {
                 <Text fw={700} size="sm" c="dark">Connexion requise</Text>
                 <Text size="sm" c="dimmed" ta="center">Connectez-vous pour voir les profils des joueurs.</Text>
               </Stack>
+              <LoginButton />
             </Stack>
           </Paper>
         </Center>
