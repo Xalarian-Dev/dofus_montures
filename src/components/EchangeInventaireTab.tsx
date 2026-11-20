@@ -12,6 +12,7 @@ import { muldos } from '@/data/mounts/muldos';
 import { volkornes } from '@/data/mounts/volkornes';
 import { useHelpOpen } from '@/hooks/useHelpOpen';
 import { buildTradeText } from '@/lib/tradeText';
+import { LoginButton } from '@/components/LoginButton';
 
 const CATEGORIES = [
   { key: 'dragodindes' as const, label: 'Dragodindes', color: 'teal', mounts: dragodindes },
@@ -42,6 +43,7 @@ export function EchangeInventaireTab() {
             <Text size="sm" c="dimmed">
               Connectez-vous pour gérer votre inventaire et proposer vos montures à l'échange.
             </Text>
+            <LoginButton />
           </Stack>
         </Paper>
       </Center>
